@@ -6,6 +6,10 @@ An illustrative claude.ai chat UI component for landing pages and documentation.
 [![NPM Downloads](https://img.shields.io/npm/dt/claude-chat-mockup)](https://www.npmjs.com/package/claude-chat-mockup)
 [![License: MIT](https://img.shields.io/npm/l/claude-chat-mockup)](https://opensource.org/licenses/MIT)
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/zpg6/claude-chat-mockup/main/assets/preview.png" alt="claude-chat-mockup rendering a Claude chat window in light and dark themes, with a pricing-section result revealed in the stage" width="100%" />
+</p>
+
 It renders the "Claude just did a thing" moment — the user's prompt, Claude's reply, a tool-call line (`[logo] provider · tool | title`), and a **stage** that fades your own result — usually an `<iframe>` — in once it loads.
 
 ## Features
