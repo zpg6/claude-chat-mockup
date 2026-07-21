@@ -1,0 +1,500 @@
+/*
+ * claude-chat-mockup — the claude.ai chat UI chrome + loading stage.
+ *
+ * Self-contained: the Claude wordmark is inlined as a data URI (no asset
+ * fetch), and no web fonts are shipped. Text imitates the Claude app with the
+ * system UI stack; the tool-call chip and error state ask for "JetBrains Mono"
+ * and fall back to the platform monospace when it isn't loaded.
+ *
+ * Theming: the window follows `prefers-color-scheme` by default. Force a scheme
+ * with `data-theme="light"` / `data-theme="dark"` on `.claude-window` (the
+ * builders set this from the `theme` option).
+ */
+
+.claude-window {
+    /* dark surface — the default */
+    --cl-bg: #1f201e;
+    --cl-surface: #292a27;
+    --cl-surface2: #30312e;
+    --cl-line: #484944;
+    --cl-rail: #191a18;
+    --cl-text: #efede6;
+    --cl-muted: #aaa9a3;
+    --cl-faint: #777873;
+    --cl-accent: #d97757;
+    --cl-preview: #101418;
+    --cl-shadow: 0 24px 64px rgba(42, 39, 33, 0.22);
+
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    background: var(--cl-bg);
+    color: var(--cl-text);
+    /* Base font so the chrome renders consistently regardless of host page styles. */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    border: 1px solid var(--cl-line);
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: var(--cl-shadow);
+}
+
+/* light surface — forced via data-theme="light" */
+.claude-window[data-theme="light"] {
+    --cl-bg: #f7f6f2;
+    --cl-surface: #eeece6;
+    --cl-surface2: #e6e3dc;
+    --cl-line: #d3d0c8;
+    --cl-rail: #eeece6;
+    --cl-text: #282722;
+    --cl-muted: #77756e;
+    --cl-faint: #aaa79f;
+    --cl-accent: #d97757;
+    --cl-preview: #f4f1ea;
+    --cl-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
+}
+
+/* light surface — auto (follow the OS) unless explicitly themed */
+@media (prefers-color-scheme: light) {
+    .claude-window:not([data-theme="dark"]):not([data-theme="light"]) {
+        --cl-bg: #f7f6f2;
+        --cl-surface: #eeece6;
+        --cl-surface2: #e6e3dc;
+        --cl-line: #d3d0c8;
+        --cl-rail: #eeece6;
+        --cl-text: #282722;
+        --cl-muted: #77756e;
+        --cl-faint: #aaa79f;
+        --cl-accent: #d97757;
+        --cl-preview: #f4f1ea;
+        --cl-shadow: 0 24px 64px rgba(0, 0, 0, 0.34);
+    }
+}
+
+.claude-window svg {
+    fill: currentColor;
+}
+
+/* ---------- left rail ---------- */
+.claude-rail {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 13px;
+    padding: 12px 0 10px;
+    background: var(--cl-rail);
+    border-right: 1px solid var(--cl-line);
+    color: var(--cl-muted);
+}
+.claude-rail-toggle,
+.claude-rail-glyph {
+    width: 25px;
+    height: 25px;
+    display: grid;
+    place-items: center;
+    border-radius: 6px;
+    color: inherit;
+}
+.claude-rail-toggle svg,
+.claude-rail-glyph svg {
+    width: 20px;
+    height: 20px;
+}
+.claude-rail-glyph:hover {
+    background: var(--cl-surface);
+}
+.claude-rail-spacer {
+    flex: 1;
+}
+.claude-rail-avatar {
+    width: 25px;
+    height: 25px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    background: var(--cl-surface2);
+    font:
+        600 8px -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-text);
+}
+
+/* ---------- app column ---------- */
+.claude-app {
+    min-width: 0;
+    background: var(--cl-bg);
+}
+.claude-top {
+    height: 43px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 13px;
+    color: var(--cl-muted);
+}
+.claude-corner {
+    width: 27px;
+    height: 27px;
+    display: grid;
+    place-items: center;
+    color: var(--cl-muted);
+}
+.claude-corner svg {
+    width: 20px;
+    height: 20px;
+}
+.claude-top .sidebar {
+    visibility: hidden;
+}
+.claude-context {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    color: var(--cl-text);
+}
+.claude-context svg {
+    width: 19px;
+    height: 19px;
+    color: var(--cl-accent);
+}
+.claude-wordmark {
+    display: block;
+    width: 54px;
+    height: 20px;
+    flex: none;
+    background: currentColor;
+    -webkit-mask: var(--cl-wordmark) center / contain no-repeat;
+    mask: var(--cl-wordmark) center / contain no-repeat;
+    --cl-wordmark: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI1NCIgaGVpZ2h0PSIyMCIgdmlld0JveD0iMTc3Ljc3IDE0LjA5IDUxMi4yMSAxMjEuNTEiPgogICAgPCEtLSBDbGF1ZGUgd29yZG1hcmsgY29udmVydGVkIHRvIG91dGxpbmVzIGJ5IEFudGhyb3BpYy4KICAgICAgICAgU291cmNlOiBodHRwczovL2NsYXVkZS5haS8gdmlhIGh0dHBzOi8vY29tbW9ucy53aWtpbWVkaWEub3JnL3dpa2kvRmlsZTpDbGF1ZGVfQUlfbG9nby5zdmcgLS0+CiAgICA8cGF0aCBmaWxsPSIjMDAwIiBkPSJtIDMxNy43MywzNDkuMzMgYyAtMTguODIsMCAtMzEuNjksLTEwLjUgLTM3Ljc2LC0yNi42NiAtMy4xNywtOC40MiAtNC43NCwtMTcuMzYgLTQuNjEsLTI2LjM2IDAsLTI3LjExIDEyLjE1LC00NS45NCAzOSwtNDUuOTQgMTguMDQsMCAyOS4xNyw3Ljg3IDM1LjUxLDI2LjY2IGggNy43MiBsIC0xLjA1LC0yNS45MSBjIC0xMC44LC02Ljk3IC0yNC4zLC0xMC41IC00MC43MiwtMTAuNSAtMjMuMTQsMCAtNDIuODIsMTAuMzUgLTUzLjc3LDI5LjAyIC01LjY2LDkuODYgLTguNTMsMjEuMDcgLTguMzIsMzIuNDQgMCwyMC43NCA5Ljc5LDM5LjExIDI4LjE2LDQ5LjMxIDEwLjA2LDUuMzcgMjEuMzQsOC4wNCAzMi43NCw3LjcyIDE3LjkyLDAgMzIuMTQsLTMuNDEgNDQuNzQsLTkuMzcgbCAzLjI2LC0yOC41NyBoIC03Ljg3IGMgLTQuNzIsMTMuMDUgLTEwLjM1LDIwLjg5IC0xOS42OSwyNS4wNSAtNC41NywyLjA2IC0xMC4zNSwzLjExIC0xNy4zMiwzLjExIHogbSA4MS4xOCwtOTguOTYgMC43NSwtMTIuNzUgaCAtNS4zMiBsIC0yMy43LDcuMTIgdiAzLjg2IGwgMTAuNSw0Ljg3IHYgODkuMTcgYyAwLDYuMDcgLTMuMTEsNy40MiAtMTEuMjUsOC40NCB2IDYuNTIgaCA0MC4zMSB2IC02LjUyIGMgLTguMTcsLTEuMDEgLTExLjI1LC0yLjM2IC0xMS4yNSwtOC40NCBWIDI1MC40IGwgLTAuMDQsLTAuMDQgeiBtIDE2MC4zMSwxMDguNzUgaCAzLjExIGwgMjcuMjYsLTUuMTcgdiAtNi42NyBsIC0zLjgyLC0wLjMgYyAtNi4zNywtMC42IC04LjAyLC0xLjkxIC04LjAyLC03LjEyIHYgLTQ3LjU1IGwgMC43NSwtMTUuMjYgaCAtNC4zMSBsIC0yNS43NiwzLjcxIHYgNi41MiBsIDIuNTEsMC40NSBjIDYuOTcsMS4wMSA5LjA0LDIuOTYgOS4wNCw3Ljg0IHYgNDIuMzcgYyAtNi42Nyw1LjE3IC0xMy4wNSw4LjQ0IC0yMC42Miw4LjQ0IC04LjQsMCAtMTMuNjEsLTQuMjcgLTEzLjYxLC0xNC4yNSB2IC0zOS43OSBsIDAuNzUsLTE1LjI2IGggLTQuNDIgbCAtMjUuOCwzLjcxIHYgNi41MiBsIDIuNjYsMC40NSBjIDYuOTcsMS4wMSA5LjA0LDIuOTYgOS4wNCw3Ljg0IHYgMzkuMTEgYyAwLDE2LjU3IDkuMzcsMjQuNDUgMjQuMywyNC40NSAxMS40LDAgMjAuNzQsLTYuMDcgMjcuNzUsLTE0LjUxIGwgLTAuNzUsMTQuNTEgLTAuMDQsLTAuMDQgeiBNIDQ4NC4zLDMwNi4zNiBjIDAsLTIxLjE5IC0xMS4yNSwtMjkuMzIgLTMxLjU3LC0yOS4zMiAtMTcuOTIsMCAtMzAuOTQsNy40MiAtMzAuOTQsMTkuNzIgMCwzLjY3IDEuMzEsNi40OSAzLjk3LDguNDQgbCAxMy42NSwtMS44IGMgLTAuNiwtNC4xMiAtMC45LC02LjY0IC0wLjksLTcuNjkgMCwtNi45NyAzLjcxLC0xMC41IDExLjI1LC0xMC41IDExLjE0LDAgMTYuNzYsNy44NCAxNi43NiwyMC40NCB2IDQuMTIgbCAtMjguMTIsOC40NCBjIC05LjM3LDIuNTUgLTE0LjcsNC43NiAtMTguMjYsOS45NCAtMS44OSwzLjE3IC0yLjgsNi44MiAtMi42MiwxMC41IDAsMTIgOC4yNSwyMC40NyAyMi4zNSwyMC40NyAxMC4yLDAgMTkuMjQsLTQuNjEgMjcuMTEsLTEzLjM1IDIuODEsOC43NCA3LjEyLDEzLjM1IDE0LjgxLDEzLjM1IDYuMjIsMCAxMS44NSwtMi41MSAxNi44NywtNy40MiBsIC0xLjUsLTUuMTcgYyAtMi4xNywwLjYgLTQuMjcsMC45IC02LjQ5LDAuOSAtNC4zMSwwIC02LjM3LC0zLjQxIC02LjM3LC0xMC4wOSB2IC0zMC45NyB6IG0gLTM2LDQwLjc2IGMgLTcuNjksMCAtMTIuNDUsLTQuNDYgLTEyLjQ1LC0xMi4zIDAsLTUuMzIgMi41MSwtOC40NCA3Ljg3LC0xMC4yNCBsIDIyLjgsLTcuMjQgdiAyMS45IGMgLTcuMjcsNS41MSAtMTEuNTUsNy44NyAtMTguMjIsNy44NyB6IG0gMjM3LjM2LDYuODIgdiAtNi42NyBsIC0zLjg2LC0wLjMgYyAtNi4zNywtMC42IC03Ljk5LC0xLjkxIC03Ljk5LC03LjEyIHYgLTg5LjQ3IGwgMC43NSwtMTIuNzUgaCAtNS4zNiBsIC0yMy43LDcuMTIgdiAzLjg2IGwgMTAuNSw0Ljg3IHYgMjkuMzIgYyAtNS45MSwtNC4wNSAtMTIuOTgsLTYuMDggLTIwLjE0LC01Ljc3IC0yMy41NSwwIC00MS45MiwxNy45MiAtNDEuOTIsNDQuNzQgMCwyMi4wOSAxMy4yLDM3LjM1IDM0Ljk1LDM3LjM1IDExLjI1LDAgMjEuMDQsLTUuNDcgMjcuMTEsLTEzLjk1IGwgLTAuNzUsMTMuOTUgaCAzLjE1IGwgMjcuMjYsLTUuMTcgdiAwIHogbSAtNDkuMzUsLTY4LjAyIGMgMTEuMjUsMCAxOS42OSw2LjUyIDE5LjY5LDE4LjUyIHYgMzMuNzUgYyAtNS4xOCw1LjE2IC0xMi4yMyw4IC0xOS41NCw3Ljg3IC0xNi4xMiwwIC0yNC4zLC0xMi43NSAtMjQuMywtMjkuNzcgMCwtMTkuMTIgOS4zNCwtMzAuMzcgMjQuMTUsLTMwLjM3IHogTSA3NDMuMywzMDIuOCBjIC0yLjEsLTkuOSAtOC4xNywtMTUuNTIgLTE2LjYxLC0xNS41MiAtMTIuNiwwIC0yMS4zNCw5LjQ5IC0yMS4zNCwyMy4xIDAsMjAuMTQgMTAuNjUsMzMuMTkgMjcuODYsMzMuMTkgMTEuNDgsLTAuMTIgMjIuMDQsLTYuMzMgMjcuNzEsLTE2LjMxIGwgNS4wMiwxLjM1IGMgLTIuMjUsMTcuNDcgLTE4LjA3LDMwLjUyIC0zNy41LDMwLjUyIC0yMi44LDAgLTM4LjUxLC0xNi44NyAtMzguNTEsLTQwLjg3IDAsLTI0IDE3LjA2LC00MS4yMSAzOS44NiwtNDEuMjEgMTcuMDIsMCAyOS4wMiwxMC4yNCAzMi44OSwyOC4wMSBsIC01OS40LDE4LjIyIHYgLTguMDIgbCA0MC4wMSwtMTIuNDEgdiAtMC4wNCB6IiB0cmFuc2Zvcm09InRyYW5zbGF0ZSgtNzUuOTYgLTIyMy41MykiIC8+Cjwvc3ZnPgo=");
+}
+
+/* ---------- conversation ---------- */
+.claude-conversation {
+    padding: 8px 16px 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    background: var(--cl-bg);
+    min-width: 0;
+}
+.claude-user {
+    align-self: flex-end;
+    max-width: 76%;
+    background: var(--cl-surface2);
+    /* Fallbacks first for browsers without color-mix() (pre-2023 engines). */
+    border: 1px solid var(--cl-line);
+    border: 1px solid color-mix(in srgb, var(--cl-line) 74%, transparent);
+    border-radius: 17px 17px 5px 17px;
+    padding: 10px 14px;
+    box-shadow: 0 2px 7px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 2px 7px color-mix(in srgb, var(--cl-bg) 65%, transparent);
+    font:
+        400 12.5px/1.45 -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-text);
+}
+.claude-response {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    min-width: 0;
+}
+.claude-avatar {
+    width: 24px;
+    height: 24px;
+    display: grid;
+    place-items: center;
+    flex: none;
+    color: var(--cl-accent);
+    margin-top: 1px;
+}
+.claude-avatar svg {
+    width: 19px;
+    height: 19px;
+}
+.claude-response-main {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+.claude-response-copy {
+    font:
+        400 12.5px/1.5 -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-text);
+}
+
+/* ---------- tool-call line ---------- */
+.claude-tool-line {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    align-self: flex-start;
+    font:
+        400 13px -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-muted);
+}
+.claude-tool-logo {
+    width: 23px;
+    height: 23px;
+    border: 1px solid var(--cl-line);
+    border-radius: 6px;
+    display: grid;
+    place-items: center;
+    background: var(--cl-surface2);
+    color: var(--cl-text);
+    font:
+        500 12px -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+.claude-tool-logo svg,
+.claude-tool-logo .brand-icon {
+    display: block;
+    width: 21px;
+    height: 21px;
+}
+.claude-tool-line b {
+    font-weight: 400;
+    color: var(--cl-text);
+}
+.claude-tool-line code {
+    font:
+        400 12px "JetBrains Mono",
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace;
+    color: var(--cl-muted);
+}
+.showcase-title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border-left: 1px solid var(--cl-line);
+    padding-left: 9px;
+    font:
+        500 11px -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-text);
+}
+
+/* ---------- loading stage ---------- */
+.board-stage {
+    position: relative;
+    align-self: flex-start;
+    isolation: isolate;
+    width: 90%;
+    height: 300px;
+    border: 1px solid var(--cl-line);
+    border-radius: 10px;
+    background: var(--cl-surface);
+    overflow: hidden;
+    /* Safari won't clip an <iframe>'s corners with border-radius alone. */
+    -webkit-clip-path: inset(0 round 10px);
+    clip-path: inset(0 round 10px);
+}
+.board-stage.unavailable {
+    display: grid;
+    place-items: center;
+    padding: 24px;
+    text-align: center;
+    font:
+        500 11px/1.5 "JetBrains Mono",
+        ui-monospace,
+        SFMono-Regular,
+        Menlo,
+        monospace;
+    color: var(--cl-muted);
+}
+.mcp-frame {
+    position: absolute;
+    inset: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+    border-radius: 9px;
+    background: transparent;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.5s ease;
+}
+.board-stage.viewer-ready .mcp-frame,
+.board-stage.viewer-ready > .board-stage-content {
+    opacity: 1;
+    pointer-events: auto;
+}
+.board-stage-content {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+}
+/* A bare iframe passed as custom content (e.g. React children) fills the stage
+   like the built-in frame, instead of collapsing to the 300x150 UA default. */
+.board-stage-content > iframe {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border: 0;
+}
+.board-loader {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    overflow: hidden;
+    background: var(--cl-preview);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: none;
+    transition:
+        opacity 0.46s ease 0.12s,
+        visibility 0s linear 0.7s;
+}
+.board-stage.viewer-ready .board-loader {
+    opacity: 0;
+    visibility: hidden;
+}
+
+/* ---------- composer ---------- */
+.claude-composer {
+    margin: 2px 14px 10px;
+    min-height: 58px;
+    border: 1px solid var(--cl-line);
+    border-radius: 14px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    padding: 9px 12px 7px;
+    background: var(--cl-surface);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.claude-placeholder {
+    font:
+        400 12px -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-muted);
+}
+.claude-compose-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--cl-text);
+}
+.claude-plus {
+    width: 20px;
+    height: 20px;
+    color: var(--cl-text);
+}
+.claude-model {
+    margin-left: auto;
+    font:
+        500 10px -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-text);
+}
+.claude-model em {
+    display: inline-flex;
+    align-items: center;
+    gap: 2px;
+    font-style: normal;
+    color: var(--cl-muted);
+    margin-left: 3px;
+}
+.claude-model svg {
+    width: 10px;
+    height: 10px;
+}
+.claude-mic,
+.claude-wave {
+    width: 20px;
+    height: 20px;
+    color: var(--cl-text);
+}
+.claude-footnote {
+    text-align: center;
+    margin: -5px 18px 9px;
+    font:
+        400 8.5px -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    color: var(--cl-faint);
+}
+
+/* ---------- responsive ---------- */
+@media (max-width: 720px) {
+    .claude-window {
+        grid-template-columns: 1fr;
+        border-radius: 11px;
+    }
+    .claude-rail {
+        display: none;
+    }
+    .claude-top {
+        padding: 0 10px;
+    }
+    .claude-top .sidebar {
+        visibility: visible;
+    }
+    .claude-conversation {
+        padding: 12px 10px 8px;
+    }
+    .claude-user {
+        max-width: 88%;
+        font-size: 12px;
+    }
+    .claude-response {
+        gap: 7px;
+    }
+    .claude-avatar {
+        width: 20px;
+        height: 20px;
+    }
+    .board-stage {
+        width: 100%;
+        height: 270px;
+        border-radius: 8px;
+    }
+    .claude-composer {
+        margin: 2px 10px 10px;
+        min-height: 54px;
+    }
+}
+@media (max-width: 420px) {
+    .claude-response {
+        display: block;
+    }
+    .claude-avatar {
+        display: none;
+    }
+    .board-stage {
+        height: 250px;
+    }
+}
+@media (prefers-reduced-motion: reduce) {
+    .mcp-frame,
+    .board-stage-content,
+    .board-loader {
+        transition-duration: 0.01ms;
+        transition-delay: 0s;
+    }
+}

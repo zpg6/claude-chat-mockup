@@ -1,0 +1,10 @@
+node_modules
+dist
+_site
+*.log
+*.tgz
+.DS_Store
+.pnpm-store
+pnpm-lock.yaml
+bun.lock
+.turbo

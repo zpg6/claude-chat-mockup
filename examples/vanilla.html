@@ -1,0 +1,224 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>claude-chat-mockup — example</title>
+        <!-- In your app: import "claude-chat-mockup/style.css" -->
+        <link rel="stylesheet" href="../dist/style.css" />
+        <style>
+            :root {
+                color-scheme: light dark;
+            }
+            body {
+                margin: 0;
+                min-height: 100vh;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                gap: 20px;
+                padding: 40px 24px 64px;
+                box-sizing: border-box;
+                background: #f4f1ea;
+                color: #2a2721;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+            @media (prefers-color-scheme: dark) {
+                body {
+                    background: #121310;
+                    color: #f3f0e8;
+                }
+            }
+            .lede {
+                text-align: center;
+                max-width: 480px;
+            }
+            .lede h1 {
+                margin: 0 0 4px;
+                font-size: 20px;
+            }
+            .lede p {
+                margin: 0;
+                opacity: 0.7;
+                font-size: 14px;
+            }
+            .controls {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                justify-content: center;
+            }
+            .controls button {
+                font:
+                    500 13px -apple-system,
+                    BlinkMacSystemFont,
+                    "Segoe UI",
+                    sans-serif;
+                padding: 7px 13px;
+                border-radius: 999px;
+                border: 1px solid currentColor;
+                background: transparent;
+                color: inherit;
+                cursor: pointer;
+                opacity: 0.75;
+            }
+            .controls button:hover {
+                opacity: 1;
+            }
+            .controls button[aria-pressed="true"] {
+                background: #d97757;
+                border-color: #d97757;
+                color: #fff;
+                opacity: 1;
+            }
+            #hero {
+                width: min(100%, 460px);
+            }
+
+            /* A generic "result" that fades into the loading stage. */
+            .preview {
+                position: absolute;
+                inset: 0;
+                display: grid;
+                grid-template-columns: repeat(3, 1fr);
+                gap: 10px;
+                padding: 18px;
+                align-content: center;
+                background: linear-gradient(135deg, #f6f3ee, #eae5db);
+                color: #2a2721;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+            .tier {
+                border: 1px solid rgba(0, 0, 0, 0.1);
+                border-radius: 10px;
+                padding: 12px 10px;
+                background: #fff;
+                display: flex;
+                flex-direction: column;
+                gap: 8px;
+            }
+            .tier.hot {
+                border-color: #d97757;
+                box-shadow: 0 6px 18px rgba(217, 119, 87, 0.22);
+            }
+            .tier b {
+                font-size: 12px;
+            }
+            .tier em {
+                font-style: normal;
+                font-size: 17px;
+                font-weight: 700;
+            }
+            .tier .row {
+                height: 5px;
+                border-radius: 3px;
+                background: rgba(0, 0, 0, 0.09);
+            }
+            .tier button {
+                margin-top: auto;
+                border: 0;
+                border-radius: 7px;
+                padding: 6px;
+                font-size: 11px;
+                font-weight: 600;
+                cursor: pointer;
+                background: rgba(0, 0, 0, 0.07);
+                color: #2a2721;
+            }
+            .tier.hot button {
+                background: #d97757;
+                color: #fff;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="lede">
+            <h1>claude-chat-mockup</h1>
+            <p>The Claude window chrome + loading stage, as a drop-in component. Theme it, drive it, done.</p>
+        </div>
+
+        <div class="controls">
+            <span class="controls" role="group" aria-label="Theme">
+                <button data-theme="auto" aria-pressed="true">Auto</button>
+                <button data-theme="light" aria-pressed="false">Light</button>
+                <button data-theme="dark" aria-pressed="false">Dark</button>
+            </span>
+            <button id="regen">↻ New answer</button>
+        </div>
+
+        <main id="hero"></main>
+
+        <!-- In your app: import { ClaudeWindow } from "claude-chat-mockup" -->
+        <script type="module">
+            import { ClaudeWindow } from "../dist/index.mjs";
+
+            // The tool-call line stays constant; each answer varies the title.
+            const TOOL = { name: "claude", call: "create_artifact" };
+
+            // A few generic conversations to cycle through.
+            const CONVERSATIONS = [
+                {
+                    prompt: "Design a pricing section for my SaaS landing page — three tiers, an annual toggle, and a highlighted Pro plan.",
+                    response: "Here's a responsive pricing section with Pro highlighted and an annual toggle.",
+                    title: "Pricing Section",
+                },
+                {
+                    prompt: "Write a SQL migration to add a soft-delete column to the orders table with an index.",
+                    response: "Added a nullable deleted_at timestamp plus a partial index for live rows.",
+                    title: "0007_soft_delete",
+                },
+                {
+                    prompt: "Summarize this quarter's churn by plan and flag anything unusual.",
+                    response: "Churn held steady except a spike on the Starter plan — details in the report.",
+                    title: "Q3 Churn Report",
+                },
+            ];
+
+            // Build a generic "result" element to fade into the stage.
+            function makePreview() {
+                const el = document.createElement("div");
+                el.className = "preview";
+                el.innerHTML = `
+                    <div class="tier"><b>Starter</b><em>$0</em><div class="row"></div><div class="row"></div><button>Choose</button></div>
+                    <div class="tier hot"><b>Pro</b><em>$29</em><div class="row"></div><div class="row"></div><button>Choose</button></div>
+                    <div class="tier"><b>Team</b><em>$99</em><div class="row"></div><div class="row"></div><button>Choose</button></div>`;
+                return el;
+            }
+
+            const first = CONVERSATIONS[0];
+            const chat = ClaudeWindow({
+                prompt: first.prompt,
+                response: first.response,
+                tool: { ...TOOL, title: first.title },
+                stage: { height: 300, content: makePreview() },
+            }).mount(document.getElementById("hero"));
+            chat.el.querySelector(".claude-tool-logo").innerHTML =
+                '<svg viewBox="0 0 24 24" width="21" height="21" aria-hidden="true"><path fill="#d97757" d="M12 2l1.9 5.6L19.5 9l-4.5 3.3L16.6 18 12 14.7 7.4 18l1.6-5.7L4.5 9l5.6-1.4z"/></svg>';
+
+            // Reveal the result after the "render".
+            const reveal = () => setTimeout(() => chat.setReady(true), 600);
+            reveal();
+
+            // Theme toggle → chat.setTheme("auto" | "light" | "dark")
+            const themeButtons = [...document.querySelectorAll("[data-theme]")];
+            for (const btn of themeButtons) {
+                btn.addEventListener("click", () => {
+                    chat.setTheme(btn.dataset.theme);
+                    themeButtons.forEach(b => b.setAttribute("aria-pressed", String(b === btn)));
+                });
+            }
+
+            // "New answer" → drive the handle: reset the stage, swap copy, re-reveal.
+            let i = 0;
+            document.getElementById("regen").addEventListener("click", () => {
+                i = (i + 1) % CONVERSATIONS.length;
+                const c = CONVERSATIONS[i];
+                chat.setReady(false);
+                chat.setPrompt(c.prompt);
+                chat.setResponse(c.response);
+                chat.setToolTitle(c.title);
+                reveal();
+            });
+        </script>
+    </body>
+</html>
