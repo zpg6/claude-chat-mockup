@@ -33,5 +33,20 @@
             "bytes": 268820
         }
     ],
-    "note": "Saved historical example outputs. Replay presents these existing artifacts without regenerating or certifying a design. The datasheet retains its original branding."
+    "note": "Saved historical example outputs. Replay presents these existing artifacts without regenerating or certifying a design. The datasheet retains its original branding.",
+    "dockGlyphs": {
+        "repository": "https://github.com/zpg6/copperlayer",
+        "revision": "ac80239e34f4b8cac61b1e6e833fce196b882fa4",
+        "path": "agent-tools/viewer/assets/viewer.html",
+        "sourceSha256": "b2d78a26abf69023cd44778ece41a635b643020102d8f7e30f8d572d5d62c01b",
+        "definition": "FILE_GLYPHS",
+        "line": 3858,
+        "mapping": {
+            "board": "pcb",
+            "housing": "model",
+            "datasheet": "doc",
+            "fabrication": "fab"
+        },
+        "note": "Path and rect markup copied verbatim from the existing MCP export-file tree icons, using its viewBox and stroke styling. These are not a preexisting four-item dock."
+    }
 }

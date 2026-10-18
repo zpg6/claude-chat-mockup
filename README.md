@@ -222,7 +222,7 @@ The window follows the viewer's `prefers-color-scheme` by default. Force a schem
 
 ## Examples
 
-- [`examples/workflow.html`](examples/workflow.html) compares three thinking/action/output response patterns inside the same chat window. It uses a saved Copperlayer board render and genuine output links, with compressed illustrative timing.
+- [`examples/workflow.html`](examples/workflow.html) compares a bottom dock, floating tray and side dock inside the same render area. Thinking and numbered actions lead into a saved Copperlayer board render, datasheet preview and genuine output links, with compressed illustrative timing.
 
 - [`examples/conversation.html`](examples/conversation.html) types a request, sends it and reveals a loaded iframe. It includes Replay/Pause controls, theme selection and a readiness hold for testing a late result. Run `pnpm build`, serve the repository, then open the file.
 
