@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Thinking, actions and outputs · claude-chat-mockup</title>
+        <link rel="stylesheet" href="../dist/style.css" />
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 40px 20px 56px;
+                background: #eeece6;
+                color: #282722;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+            main {
+                max-width: 760px;
+                margin: 0 auto;
+            }
+            header {
+                max-width: 570px;
+                margin: 0 0 24px;
+            }
+            .back {
+                display: inline-block;
+                color: #77756e;
+                font-size: 12px;
+                margin-bottom: 18px;
+                text-underline-offset: 3px;
+            }
+            h1 {
+                font-size: clamp(26px, 5vw, 38px);
+                line-height: 1.15;
+                letter-spacing: -0.04em;
+                font-weight: 500;
+                margin: 0 0 12px;
+            }
+            p {
+                font-size: 14px;
+                line-height: 1.6;
+                color: #77756e;
+                margin: 0;
+            }
+            .options {
+                display: grid;
+                grid-template-columns: repeat(3, minmax(0, 1fr));
+                gap: 8px;
+                margin: 24px 0 12px;
+            }
+            .options button {
+                text-align: left;
+                border: 1px solid #d3d0c8;
+                border-radius: 9px;
+                padding: 11px 12px;
+                background: transparent;
+                color: #77756e;
+                font: inherit;
+                cursor: pointer;
+            }
+            .options button[aria-pressed="true"] {
+                background: #f7f6f2;
+                border-color: #c56b4d;
+                color: #282722;
+                box-shadow: 0 2px 7px #28272208;
+            }
+            .options b {
+                display: block;
+                font-size: 12px;
+                font-weight: 500;
+            }
+            .options span {
+                display: block;
+                margin-top: 3px;
+                font-size: 10px;
+                line-height: 1.4;
+            }
+            .settings {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 12px 24px;
+                margin: 18px 0 14px;
+                font-size: 12px;
+            }
+            label {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+            select {
+                font: inherit;
+                padding: 4px;
+                background: transparent;
+                color: inherit;
+                border: 1px solid #d3d0c8;
+                border-radius: 5px;
+            }
+            input {
+                accent-color: #b85a3a;
+            }
+            .note {
+                margin-top: 14px;
+                font-size: 11px;
+            }
+            .note a {
+                color: inherit;
+                text-underline-offset: 2px;
+            }
+            #hero {
+                min-width: 0;
+            }
+            .artifact-view {
+                height: 100%;
+                display: grid;
+                grid-template-rows: minmax(0, 1fr) auto;
+                background: #f4f1ea;
+                color: #282722;
+            }
+            .artifact-grid {
+                display: grid;
+                grid-template-columns: minmax(0, 1fr);
+                min-height: 0;
+            }
+            .artifact-board {
+                position: relative;
+                margin: 0;
+                min-width: 0;
+                min-height: 0;
+                padding: 14px;
+            }
+            .artifact-board a {
+                display: block;
+                height: 100%;
+            }
+            .artifact-board img {
+                width: 100%;
+                height: 100%;
+                display: block;
+                object-fit: contain;
+            }
+            .artifact-label {
+                position: absolute;
+                top: 9px;
+                left: 11px;
+                color: #77756e;
+                font-size: 9px;
+                pointer-events: none;
+            }
+            .datasheet-preview {
+                display: none;
+                min-width: 0;
+                padding: 13px 12px 8px 0;
+                color: inherit;
+                text-decoration: none;
+            }
+            .datasheet-preview img {
+                display: block;
+                width: 100%;
+                height: calc(100% - 21px);
+                object-fit: contain;
+                object-position: center;
+            }
+            .datasheet-preview img[hidden] {
+                display: none;
+            }
+            .datasheet-preview span {
+                display: block;
+                text-align: center;
+                font-size: 9px;
+                margin-top: 6px;
+            }
+            .output-links {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 7px 16px;
+                padding: 10px 12px;
+                border-top: 1px solid #ddd6c8;
+                background: #fcfbf7;
+            }
+            .output-links a {
+                color: #625b4f;
+                font-size: 10px;
+                text-decoration: none;
+                line-height: 1.4;
+            }
+            .output-links a:hover {
+                text-decoration: underline;
+            }
+            [data-variant="checklist"] .claude-step-status {
+                position: static;
+                width: auto;
+                height: auto;
+                overflow: visible;
+                clip-path: none;
+                white-space: nowrap;
+                margin-left: auto;
+                color: var(--cl-muted);
+                font-size: 9px;
+            }
+            [data-variant="checklist"] .claude-step-marker {
+                font-size: 0;
+                border-radius: 5px;
+                width: 17px;
+                height: 17px;
+                margin-left: 1px;
+                margin-right: 1px;
+            }
+            [data-variant="checklist"] .claude-step[data-status="completed"] .claude-step-marker::after {
+                content: "✓";
+                font-size: 11px;
+            }
+            [data-variant="checklist"] .claude-step[data-status="active"] .claude-step-status {
+                color: var(--cl-accent);
+            }
+            [data-variant="deliverables"] .artifact-grid {
+                grid-template-columns: minmax(0, 1fr) minmax(75px, 0.4fr);
+            }
+            [data-variant="deliverables"] .datasheet-preview {
+                display: block;
+            }
+            [data-variant="deliverables"] .output-links {
+                display: grid;
+                grid-template-columns: repeat(2, minmax(0, 1fr));
+                gap: 6px;
+                padding: 8px;
+            }
+            [data-variant="deliverables"] .output-links a {
+                padding: 7px 8px;
+                border: 1px solid #ddd6c8;
+                border-radius: 5px;
+                background: #fff;
+            }
+            button:focus-visible,
+            a:focus-visible,
+            select:focus-visible,
+            input:focus-visible {
+                outline: 2px solid #b85a3a;
+                outline-offset: 3px;
+            }
+            @media (max-width: 420px) {
+                body {
+                    padding: 24px 12px 40px;
+                }
+                .options {
+                    gap: 5px;
+                }
+                .options button {
+                    padding: 9px 7px;
+                }
+                .options b {
+                    font-size: 11px;
+                }
+                .options span {
+                    font-size: 9px;
+                }
+                .claude-step {
+                    font-size: 11px;
+                    gap: 8px;
+                }
+                .artifact-board {
+                    padding: 8px;
+                }
+                .output-links {
+                    gap: 7px 12px;
+                    padding: 9px;
+                }
+                [data-variant="checklist"] .claude-step-status {
+                    font-size: 8px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <a class="back" href="./conversation.html">← Compare with Conversation</a>
+                <h1>Thinking, steps, then the result.</h1>
+                <p>Three response patterns inside the same Claude conversation. Choose an option to replay it.</p>
+            </header>
+            <div class="options" role="group" aria-label="Response options">
+                <button type="button" data-option="compact" aria-pressed="true">
+                    <b>01 · Compact steps</b><span>A quiet connected action list</span>
+                </button>
+                <button type="button" data-option="checklist" aria-pressed="false">
+                    <b>02 · Current action</b><span>Active and completed steps</span>
+                </button>
+                <button type="button" data-option="deliverables" aria-pressed="false">
+                    <b>03 · The outputs</b><span>Board, datasheet and files</span>
+                </button>
+            </div>
+            <div class="settings">
+                <label
+                    >Theme
+                    <select id="theme">
+                        <option value="light">Light</option>
+                        <option value="dark">Dark</option>
+                        <option value="auto">System</option>
+                    </select></label
+                >
+                <label><input id="hold" type="checkbox" /> Hold result readiness</label>
+            </div>
+            <div id="hero" data-variant="compact"></div>
+            <p id="load-error" class="note" role="alert" hidden></p>
+            <p class="note">
+                Illustrative playback using a saved Molex CAN Node design. Sequence compressed; Replay reuses existing
+                outputs. <a href="./workflow-assets/provenance.json">Output sources</a>.
+            </p>
+        </main>
+        <script type="module">
+            import { ClaudeWindow } from "../dist/index.mjs";
+
+            const outputRoot = "https://copperlayer.ai/mcpui/";
+            const pdf =
+                outputRoot +
+                "molex_can_node_hero-f70397ceee1875978c86746e104e83fb0b3cfc168363bdf16b2b87719e7206de.datasheet.pdf";
+            const fab =
+                outputRoot +
+                "molex_can_node_hero-8fbbd32ca6f59e3c7c11152d202e8203787ad328e72640c0815bc2a19d39691b.fab.zip";
+            const base = outputRoot + "after-gerbers/housing/base-print.stl";
+            const lid = outputRoot + "after-gerbers/housing/lid-print.stl";
+            const variants = {
+                compact: {
+                    thinking: "Mapping the CAN and power connections.",
+                    steps: [
+                        { label: "Resolve CAN and power parts" },
+                        { label: "Place and route the board" },
+                        { label: "Prepare the datasheet and fabrication files" },
+                    ],
+                    response: "Here are the board and design files.",
+                },
+                checklist: {
+                    thinking: "Checking the interfaces before layout.",
+                    steps: [
+                        { label: "Choose the CAN and power parts" },
+                        { label: "Place and route the board" },
+                        { label: "Prepare the design outputs" },
+                    ],
+                    response: "The board and its files are ready to inspect.",
+                },
+                deliverables: {
+                    thinking: "Putting the design outputs together.",
+                    steps: [
+                        { label: "Complete the board design", logo: "B" },
+                        { label: "Prepare the datasheet and fabrication files", logo: "F" },
+                    ],
+                    response: "Here are the board, datasheet and design files.",
+                },
+            };
+            const result = document.createElement("div");
+            result.className = "artifact-view";
+            result.innerHTML = `<div class="artifact-grid"><figure class="artifact-board"><span class="artifact-label">Board render</span><a href="./workflow-assets/board.png" target="_blank" rel="noopener" aria-label="Open the full board render"><img alt="Molex CAN Node board render showing its connectors, CAN interface, GPIO and SWD header"></a></figure><a class="datasheet-preview" href="${pdf}" target="_blank" rel="noopener"><img alt="Molex CAN Node datasheet, first page"><span>Datasheet PDF ↗</span></a></div><div class="output-links"><a href="${pdf}" target="_blank" rel="noopener">Datasheet · PDF ↗</a><a href="${fab}" target="_blank" rel="noopener">Fabrication · ZIP ↗</a><a href="${base}" target="_blank" rel="noopener">Housing base · STL ↗</a><a href="${lid}" target="_blank" rel="noopener">Housing lid · STL ↗</a></div>`;
+            const board = result.querySelector(".artifact-board img");
+            const datasheet = result.querySelector(".datasheet-preview img");
+            const hold = document.querySelector("#hold");
+            const hero = document.querySelector("#hero");
+            let boardLoaded = false;
+            let datasheetSettled = false;
+            const updateReady = () => chat.setReady(boardLoaded && datasheetSettled && !hold.checked);
+            const chat = ClaudeWindow({
+                prompt: "Design a 12 V CAN node with four GPIOs and SWD.",
+                ...variants.compact,
+                tool: {
+                    name: "copperlayer.ai",
+                    call: "board_render",
+                    title: "Molex CAN Node",
+                    logo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5H9L5 9v6l4 4h10M19 9h-8l-2 2v2l2 2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+                },
+                stage: { content: result, height: 320 },
+                theme: "light",
+                animation: { responseDelay: 250 },
+            }).mount(hero);
+            board.addEventListener(
+                "load",
+                () => {
+                    boardLoaded = true;
+                    updateReady();
+                },
+                { once: true }
+            );
+            board.addEventListener(
+                "error",
+                () => {
+                    boardLoaded = false;
+                    updateReady();
+                    const error = document.querySelector("#load-error");
+                    error.hidden = false;
+                    error.innerHTML = `The board preview could not load. You can still open the <a href="${pdf}" target="_blank" rel="noopener">datasheet</a> or <a href="${fab}" target="_blank" rel="noopener">fabrication files</a>.`;
+                },
+                { once: true }
+            );
+            datasheet.addEventListener(
+                "load",
+                () => {
+                    datasheetSettled = true;
+                    updateReady();
+                },
+                { once: true }
+            );
+            datasheet.addEventListener(
+                "error",
+                () => {
+                    datasheetSettled = true;
+                    datasheet.hidden = true;
+                    const fallback = document.createElement("span");
+                    fallback.textContent = "Preview unavailable. Open the datasheet PDF.";
+                    datasheet.after(fallback);
+                    updateReady();
+                },
+                { once: true }
+            );
+            board.src = "./workflow-assets/board.png";
+            datasheet.src = "./workflow-assets/datasheet-page-1.png";
+            document.querySelectorAll("[data-option]").forEach(button =>
+                button.addEventListener("click", () => {
+                    const name = button.dataset.option;
+                    const variant = variants[name];
+                    hero.dataset.variant = name;
+                    document
+                        .querySelectorAll("[data-option]")
+                        .forEach(option => option.setAttribute("aria-pressed", String(option === button)));
+                    chat.setThinking(variant.thinking);
+                    chat.setSteps(variant.steps);
+                    chat.setResponse(variant.response);
+                    chat.playback.replay();
+                })
+            );
+            hold.addEventListener("change", updateReady);
+            document.querySelector("#theme").addEventListener("change", event => chat.setTheme(event.target.value));
+            window.addEventListener("pagehide", () => chat.destroy(), { once: true });
+        </script>
+    </body>
+</html>

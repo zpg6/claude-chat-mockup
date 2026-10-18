@@ -1,0 +1,37 @@
+{
+    "title": "Molex CAN Node",
+    "revision": "fd707652ff06",
+    "boardRender": {
+        "file": "board.png",
+        "sha256": "a18abab5eccb051bf0878970449d18cd3b0602fa32bd084cd40f9856dd9c50f5",
+        "source": "https://copperlayer.ai/mcpui/molex_can_node_hero-a18abab5eccb051bf0878970449d18cd3b0602fa32bd084cd40f9856dd9c50f5.png"
+    },
+    "outputs": [
+        {
+            "source": "https://copperlayer.ai/mcpui/molex_can_node_hero-8fbbd32ca6f59e3c7c11152d202e8203787ad328e72640c0815bc2a19d39691b.fab.zip",
+            "sha256": "8fbbd32ca6f59e3c7c11152d202e8203787ad328e72640c0815bc2a19d39691b",
+            "bytes": 3012603
+        },
+        {
+            "source": "https://copperlayer.ai/mcpui/molex_can_node_hero-f70397ceee1875978c86746e104e83fb0b3cfc168363bdf16b2b87719e7206de.datasheet.pdf",
+            "sha256": "f70397ceee1875978c86746e104e83fb0b3cfc168363bdf16b2b87719e7206de",
+            "bytes": 2394260
+        },
+        {
+            "source": "https://copperlayer.ai/mcpui/molex_can_node_hero-06db23a6a196dd26c0cfbebc1cb14827d9e6a1c8861a525ac85a98a82958832c.datasheet-page-1.png",
+            "sha256": "06db23a6a196dd26c0cfbebc1cb14827d9e6a1c8861a525ac85a98a82958832c",
+            "bytes": 192274
+        },
+        {
+            "source": "https://copperlayer.ai/mcpui/after-gerbers/housing/base-print.stl",
+            "sha256": "16c07c45c973903a8e372966bcb753f87ff278d81c2f87c0c16a2f50a6225e2c",
+            "bytes": 265954
+        },
+        {
+            "source": "https://copperlayer.ai/mcpui/after-gerbers/housing/lid-print.stl",
+            "sha256": "9bb4ee80057a0be1455c60ba4bceebe604f4d35e06d485c4a69a9f935c302d0f",
+            "bytes": 268820
+        }
+    ],
+    "note": "Saved historical example outputs. Replay presents these existing artifacts without regenerating or certifying a design. The datasheet retains its original branding."
+}

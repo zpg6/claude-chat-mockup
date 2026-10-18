@@ -19,12 +19,19 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { CLAUDE_SYMBOLS, SYMBOLS_ID, injectSymbols } from "./symbols";
-import { createPlayback, type PlaybackController } from "./playback";
-import type { ClaudeTheme, ToolCall, ConversationAnimationOptions, ConversationPlaybackState } from "./types";
+import { createPlayback, normalizeSteps, playbackAnnouncement, type PlaybackController } from "./playback";
+import type {
+    ClaudeTheme,
+    ToolCall,
+    ConversationAnimationOptions,
+    ConversationPlaybackState,
+    ConversationStep,
+} from "./types";
 
 export type {
     ClaudeTheme,
     ToolCall,
+    ConversationStep,
     ConversationAnimationOptions,
     ConversationPlayback,
     ConversationPlaybackState,
@@ -33,6 +40,10 @@ export type {
 export interface ClaudeWindowProps {
     /** The user's prompt bubble text. */
     prompt: string;
+    /** A short intention before the actions and final response. */
+    thinking?: string;
+    /** Concrete illustrative actions. Blank labels are ignored. */
+    steps?: readonly ConversationStep[];
     /** Claude's reply copy shown above the tool line / stage. */
     response?: ReactNode;
     /** A tool-call line to render under the response. */
@@ -90,6 +101,8 @@ const Icon = ({ id, className }: { id: string; className?: string }) => (
 
 export function ClaudeWindow({
     prompt,
+    thinking,
+    steps = [],
     response,
     tool,
     avatar = "You",
@@ -112,10 +125,13 @@ export function ClaudeWindow({
 
     const enabled = !!animation;
     const options = typeof animation === "object" ? animation : {};
-    const { autoplay, typingDuration, sendDelay, responseDelay } = options;
+    const { autoplay, typingDuration, sendDelay, thinkingDuration, stepDuration, responseDelay } = options;
+    const intention = thinking?.trim() ?? "";
+    const actions = normalizeSteps(steps);
+    const hasProgress = !!intention || actions.length > 0;
     const hasStage = children != null;
-    const latest = useRef({ prompt, ready });
-    latest.current = { prompt, ready };
+    const latest = useRef({ prompt, ready, thinking: intention, steps: actions });
+    latest.current = { prompt, ready, thinking: intention, steps: actions };
     const playback = useRef<PlaybackController | null>(null);
     const [state, setState] = useState<ConversationPlaybackState | null>(null);
     useEffect(() => {
@@ -127,7 +143,7 @@ export function ClaudeWindow({
             ...latest.current,
             hasStage,
             document,
-            animation: { autoplay, typingDuration, sendDelay, responseDelay },
+            animation: { autoplay, typingDuration, sendDelay, thinkingDuration, stepDuration, responseDelay },
             onChange: setState,
         });
         playback.current = controller;
@@ -135,15 +151,23 @@ export function ClaudeWindow({
             controller.destroy();
             playback.current = null;
         };
-    }, [enabled, autoplay, typingDuration, sendDelay, responseDelay, hasStage]);
+    }, [enabled, autoplay, typingDuration, sendDelay, thinkingDuration, stepDuration, responseDelay, hasStage]);
     useEffect(() => {
         playback.current?.setPrompt(prompt);
     }, [prompt]);
+    useEffect(() => {
+        playback.current?.setThinking(intention);
+    }, [intention]);
+    useEffect(() => {
+        playback.current?.setSteps(steps);
+    }, [steps]);
     useEffect(() => {
         playback.current?.setReady(ready);
     }, [ready]);
     const phase = state?.phase ?? "typing";
     const timelineComplete = state?.timelineComplete === true;
+    const progressVisible = hasProgress && phase !== "typing" && phase !== "sending";
+    const finalHidden = enabled ? !timelineComplete : undefined;
     const stageReady = enabled ? state?.stageReady === true : ready;
     const paused = state?.paused ?? autoplay === false;
 
@@ -158,6 +182,7 @@ export function ClaudeWindow({
             aria-label="Claude conversation"
             data-theme={theme === "auto" ? undefined : theme}
             style={style}
+            data-ccp-progress={hasProgress ? "" : undefined}
             data-ccp-animation={enabled ? "" : undefined}
             data-ccp-phase={enabled ? phase : undefined}
             data-ccp-paused={enabled ? String(paused) : undefined}
@@ -196,14 +221,57 @@ export function ClaudeWindow({
                     >
                         {prompt}
                     </div>
-                    <div className="claude-response" aria-hidden={enabled ? !timelineComplete : undefined}>
+                    <div
+                        className="claude-response"
+                        aria-hidden={enabled ? !progressVisible && !timelineComplete : undefined}
+                    >
                         <div className="claude-avatar" aria-hidden="true">
                             <Icon id="claude-svg" />
                         </div>
                         <div className="claude-response-main">
-                            {response != null && <div className="claude-response-copy">{response}</div>}
+                            {intention && (
+                                <div className="claude-thinking" aria-hidden={enabled ? !progressVisible : undefined}>
+                                    {intention}
+                                </div>
+                            )}
+                            {actions.length > 0 && (
+                                <ol
+                                    className="claude-steps"
+                                    aria-label="Example actions"
+                                    aria-hidden={enabled ? !progressVisible || phase === "thinking" : undefined}
+                                >
+                                    {actions.map((step, index) => {
+                                        const status =
+                                            !enabled || index < (state?.completedSteps ?? 0)
+                                                ? "completed"
+                                                : index === state?.activeStep
+                                                  ? "active"
+                                                  : "pending";
+                                        return (
+                                            <li className="claude-step" data-status={status} key={index}>
+                                                <span className="claude-step-marker" aria-hidden="true">
+                                                    {step.logo ? <ToolLogo logo={step.logo} /> : index + 1}
+                                                </span>
+                                                <span className="claude-step-label">{step.label}</span>
+                                                <span className="claude-step-status">
+                                                    {status === "active"
+                                                        ? "In progress"
+                                                        : status === "completed"
+                                                          ? "Completed"
+                                                          : "Pending"}
+                                                </span>
+                                            </li>
+                                        );
+                                    })}
+                                </ol>
+                            )}
+                            {response != null && (
+                                <div className="claude-response-copy" aria-hidden={finalHidden}>
+                                    {response}
+                                </div>
+                            )}
                             {tool && (
-                                <div className="claude-tool-line">
+                                <div className="claude-tool-line" aria-hidden={finalHidden}>
                                     <span className="claude-tool-logo" aria-label={tool.name}>
                                         {tool.logo ? <ToolLogo logo={tool.logo} /> : null}
                                     </span>
@@ -216,6 +284,7 @@ export function ClaudeWindow({
                                 <div
                                     className={["board-stage", stageReady ? "viewer-ready" : ""].join(" ").trim()}
                                     style={stageStyle}
+                                    aria-hidden={finalHidden}
                                 >
                                     <div className="board-loader" aria-hidden="true" />
                                     <div className="board-stage-content">{children}</div>
@@ -253,15 +322,7 @@ export function ClaudeWindow({
                 {enabled && (
                     <>
                         <div className="claude-playback-status" role="status" aria-live="polite">
-                            {phase === "typing"
-                                ? "Typing the example request."
-                                : phase === "sending"
-                                  ? "Sending the example request."
-                                  : phase === "responding"
-                                    ? "Request sent."
-                                    : phase === "waiting"
-                                      ? "Waiting for the result to be ready."
-                                      : "Example conversation complete."}
+                            {state ? playbackAnnouncement(state, intention, actions) : "Typing the example request."}
                         </div>
                         {options.controls !== false && (
                             <div className="claude-playback-controls">

@@ -230,6 +230,82 @@
     color: var(--cl-text);
 }
 
+.claude-thinking {
+    color: var(--cl-muted);
+    font-size: 12px;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+}
+.claude-steps {
+    position: relative;
+    list-style: none;
+    margin: 0 0 3px;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.claude-steps::before {
+    content: "";
+    position: absolute;
+    left: 9px;
+    top: 10px;
+    bottom: 10px;
+    width: 1px;
+    background: var(--cl-line);
+}
+.claude-step {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-height: 25px;
+    color: var(--cl-text);
+    font-size: 12px;
+    line-height: 1.5;
+}
+.claude-step-marker {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 19px;
+    height: 19px;
+    border: 1px solid var(--cl-line);
+    border-radius: 50%;
+    background: var(--cl-bg);
+    color: var(--cl-muted);
+    font-size: 10px;
+}
+.claude-step-marker svg {
+    width: 13px;
+    height: 13px;
+}
+.claude-step-label {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.claude-step-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.claude-step[data-status="pending"] {
+    color: var(--cl-muted);
+}
+.claude-step[data-status="active"] .claude-step-marker {
+    color: var(--cl-accent);
+    border-color: var(--cl-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--cl-accent) 10%, transparent);
+}
+.claude-step[data-status="completed"] .claude-step-marker {
+    color: var(--cl-text);
+}
+
 /* ---------- tool-call line ---------- */
 .claude-tool-line {
     display: flex;
@@ -488,6 +564,21 @@
     opacity: 0;
     visibility: hidden;
     transform: translateY(8px);
+}
+.claude-window[data-ccp-progress][data-ccp-phase="thinking"] .claude-response,
+.claude-window[data-ccp-progress][data-ccp-phase="steps"] .claude-response,
+.claude-window[data-ccp-progress][data-ccp-phase="responding"] .claude-response {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+}
+.claude-window[data-ccp-animation] .claude-thinking[aria-hidden="true"],
+.claude-window[data-ccp-animation] .claude-steps[aria-hidden="true"],
+.claude-window[data-ccp-animation] .claude-response-main > .claude-response-copy[aria-hidden="true"],
+.claude-window[data-ccp-animation] .claude-response-main > .claude-tool-line[aria-hidden="true"],
+.claude-window[data-ccp-animation] .claude-response-main > .board-stage[aria-hidden="true"] {
+    visibility: hidden;
+    opacity: 0;
 }
 .claude-window[data-ccp-animation] .claude-typed-prompt,
 .claude-window[data-ccp-animation] .claude-send {

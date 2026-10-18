@@ -10,8 +10,15 @@
  */
 
 import { injectSymbols } from "./symbols";
-import { createPlayback, type PlaybackController } from "./playback";
-import type { ClaudeTheme, ClaudeWindowHandle, ClaudeWindowOptions, StageOptions, ToolCall } from "./types";
+import { createPlayback, normalizeSteps, sameSteps, playbackAnnouncement, type PlaybackController } from "./playback";
+import type {
+    ClaudeTheme,
+    ClaudeWindowHandle,
+    ClaudeWindowOptions,
+    StageOptions,
+    ToolCall,
+    ConversationPlaybackState,
+} from "./types";
 
 export type {
     ClaudeTheme,
@@ -19,6 +26,7 @@ export type {
     ClaudeWindowOptions,
     StageOptions,
     ToolCall,
+    ConversationStep,
     ConversationAnimationOptions,
     ConversationPlayback,
     ConversationPlaybackState,
@@ -190,17 +198,81 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
         if (options.stage.ready) setReady(true);
     }
 
+    let thinking = options.thinking?.trim() ?? "";
+    let steps = normalizeSteps(options.steps);
+    const response = el.querySelector<HTMLElement>(".claude-response")!;
+    const responseMain = el.querySelector<HTMLElement>(".claude-response-main")!;
+    const finalNodes = Array.from(responseMain.children) as HTMLElement[];
+    let thinkingEl: HTMLElement | null = null;
+    let stepsEl: HTMLOListElement | null = null;
+    function renderProgress(state?: ConversationPlaybackState) {
+        const hasProgress = !!thinking || steps.length > 0;
+        if (hasProgress) el.dataset.ccpProgress = "";
+        else delete el.dataset.ccpProgress;
+        if (state) {
+            const progressVisible = hasProgress && state.phase !== "typing" && state.phase !== "sending";
+            response.setAttribute("aria-hidden", String(!progressVisible && !state.timelineComplete));
+            finalNodes.forEach(node => node.setAttribute("aria-hidden", String(!state.timelineComplete)));
+            thinkingEl?.setAttribute("aria-hidden", String(!progressVisible));
+            stepsEl?.setAttribute("aria-hidden", String(!progressVisible || state.phase === "thinking"));
+        }
+        stepsEl?.querySelectorAll<HTMLElement>(".claude-step").forEach((node, index) => {
+            const status =
+                !state || index < state.completedSteps
+                    ? "completed"
+                    : index === state.activeStep
+                      ? "active"
+                      : "pending";
+            node.dataset.status = status;
+            node.querySelector<HTMLElement>(".claude-step-status")!.textContent =
+                status === "active" ? "In progress" : status === "completed" ? "Completed" : "Pending";
+        });
+    }
+    function syncProgress() {
+        if (thinking && !thinkingEl) {
+            thinkingEl = doc.createElement("div");
+            thinkingEl.className = "claude-thinking";
+            responseMain.prepend(thinkingEl);
+        }
+        if (thinkingEl) {
+            if (thinking) thinkingEl.textContent = thinking;
+            else {
+                thinkingEl.remove();
+                thinkingEl = null;
+            }
+        }
+        if (stepsEl) {
+            stepsEl.remove();
+            stepsEl = null;
+        }
+        if (steps.length) {
+            stepsEl = doc.createElement("ol");
+            stepsEl.className = "claude-steps";
+            stepsEl.setAttribute("aria-label", "Example actions");
+            stepsEl.innerHTML = steps
+                .map(
+                    (step, index) =>
+                        `<li class="claude-step"><span class="claude-step-marker" aria-hidden="true">${step.logo ? toolLogo(step.logo) : index + 1}</span><span class="claude-step-label">${esc(step.label)}</span><span class="claude-step-status"></span></li>`
+                )
+                .join("");
+            responseMain.insertBefore(stepsEl, thinkingEl ? thinkingEl.nextSibling : responseMain.firstChild);
+        }
+        renderProgress(playback?.state);
+    }
+    syncProgress();
+
     const toggle = el.querySelector<HTMLButtonElement>("[data-ccp-toggle]");
     const replay = el.querySelector<HTMLButtonElement>("[data-ccp-replay]");
     const togglePlayback = () => (playback?.state.paused ? playback.play() : playback?.pause());
     const replayPlayback = () => playback?.replay();
     if (options.animation) {
         const typed = el.querySelector<HTMLElement>("[data-ccp-typed]")!;
-        const response = el.querySelector<HTMLElement>(".claude-response")!;
         const status = el.querySelector<HTMLElement>(".claude-playback-status")!;
         el.dataset.ccpAnimation = "";
         playback = createPlayback({
             prompt: options.prompt,
+            thinking,
+            steps,
             ready: options.stage?.ready === true,
             hasStage: stage !== null,
             document: doc,
@@ -210,22 +282,13 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
                 el.dataset.ccpPaused = String(state.paused);
                 typed.textContent = state.typedPrompt;
                 promptEl?.setAttribute("aria-hidden", String(state.phase === "typing" || state.phase === "sending"));
-                response.setAttribute("aria-hidden", String(!state.timelineComplete));
+                renderProgress(state);
                 stage?.classList.toggle("viewer-ready", state.stageReady);
                 if (toggle) {
                     toggle.textContent = state.paused ? "Play" : "Pause";
                     toggle.disabled = state.timelineComplete;
                 }
-                const message =
-                    state.phase === "typing"
-                        ? "Typing the example request."
-                        : state.phase === "sending"
-                          ? "Sending the example request."
-                          : state.phase === "responding"
-                            ? "Request sent."
-                            : state.phase === "waiting"
-                              ? "Waiting for the result to be ready."
-                              : "Example conversation complete.";
+                const message = playbackAnnouncement(state, thinking, steps);
                 if (status.textContent !== message) status.textContent = message;
             },
         });
@@ -243,6 +306,20 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
         setPrompt(text) {
             if (promptEl) promptEl.textContent = text;
             playback?.setPrompt(text);
+        },
+        setThinking(text) {
+            const next = text?.trim() ?? "";
+            if (destroyed || next === thinking) return;
+            thinking = next;
+            syncProgress();
+            playback?.setThinking(thinking);
+        },
+        setSteps(value) {
+            const next = normalizeSteps(value);
+            if (destroyed || sameSteps(next, steps)) return;
+            steps = next;
+            syncProgress();
+            playback?.setSteps(steps);
         },
         setResponse(text) {
             if (responseEl) responseEl.textContent = text;

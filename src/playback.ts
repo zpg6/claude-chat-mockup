@@ -1,7 +1,14 @@
-import type { ConversationAnimationOptions, ConversationPlayback, ConversationPlaybackState } from "./types";
+import type {
+    ConversationAnimationOptions,
+    ConversationPlayback,
+    ConversationPlaybackState,
+    ConversationStep,
+} from "./types";
 
 interface PlaybackOptions {
     prompt: string;
+    thinking?: string;
+    steps?: readonly ConversationStep[];
     ready: boolean;
     hasStage: boolean;
     document: Document;
@@ -11,8 +18,41 @@ interface PlaybackOptions {
 
 export interface PlaybackController extends ConversationPlayback {
     setPrompt(prompt: string): void;
+    setThinking(thinking?: string): void;
+    setSteps(steps?: readonly ConversationStep[]): void;
     setReady(ready: boolean): void;
     destroy(): void;
+}
+
+export function normalizeSteps(steps: readonly ConversationStep[] = []): ConversationStep[] {
+    return steps
+        .map(({ label, logo }) => ({ label: label.trim(), logo: logo?.trim() || undefined }))
+        .filter(({ label }) => label.length > 0);
+}
+export function sameSteps(a: readonly ConversationStep[], b: readonly ConversationStep[]): boolean {
+    return a.length === b.length && a.every((step, i) => step.label === b[i].label && step.logo === b[i].logo);
+}
+export function playbackAnnouncement(
+    state: ConversationPlaybackState,
+    thinking: string,
+    steps: readonly ConversationStep[]
+) {
+    switch (state.phase) {
+        case "typing":
+            return "Typing the example request.";
+        case "sending":
+            return "Sending the example request.";
+        case "thinking":
+            return thinking;
+        case "steps":
+            return steps[state.activeStep ?? 0]?.label ?? "Working through the example actions.";
+        case "responding":
+            return thinking || steps.length ? "Preparing the example response." : "Request sent.";
+        case "waiting":
+            return "Waiting for the result to be ready.";
+        case "complete":
+            return "Example conversation complete.";
+    }
 }
 
 const duration = (value: number | undefined, fallback: number) =>
@@ -22,15 +62,22 @@ const duration = (value: number | undefined, fallback: number) =>
 export function createPlayback(options: PlaybackOptions): PlaybackController {
     const typing = duration(options.animation.typingDuration, 2200);
     const send = typing + duration(options.animation.sendDelay, 300);
-    const total = send + duration(options.animation.responseDelay, 450);
+    const thinkingDuration = duration(options.animation.thinkingDuration, 500);
+    const stepDuration = duration(options.animation.stepDuration, 400);
+    const responseDuration = duration(options.animation.responseDelay, 450);
     const doc = options.document;
     const motion = doc.defaultView?.matchMedia?.("(prefers-reduced-motion: reduce)");
     let reduced = motion?.matches === true;
     let prompt = options.prompt;
+    let thinking = options.thinking?.trim() ?? "";
+    let steps = normalizeSteps(options.steps);
     let characters = Array.from(prompt);
     let ready = options.ready;
     let paused = options.animation.autoplay === false;
-    let elapsed = reduced ? total : 0;
+    const thinkingEnd = () => send + (thinking ? thinkingDuration : 0);
+    const stepsEnd = () => thinkingEnd() + steps.length * stepDuration;
+    const total = () => stepsEnd() + responseDuration;
+    let elapsed = reduced ? total() : 0;
     let started = 0;
     let running = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
@@ -38,7 +85,7 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
     let state: ConversationPlaybackState;
 
     function capture() {
-        if (running) elapsed = Math.min(total, elapsed + Math.max(0, Date.now() - started));
+        if (running) elapsed = Math.min(total(), elapsed + Math.max(0, Date.now() - started));
         running = false;
         clearTimeout(timer);
         timer = undefined;
@@ -46,7 +93,7 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
 
     function update() {
         if (destroyed) return;
-        const timelineComplete = reduced || elapsed >= total;
+        const timelineComplete = reduced || elapsed >= total();
         const phase = timelineComplete
             ? options.hasStage && !ready
                 ? "waiting"
@@ -55,7 +102,14 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
               ? "typing"
               : elapsed < send
                 ? "sending"
-                : "responding";
+                : elapsed < thinkingEnd()
+                  ? "thinking"
+                  : elapsed < stepsEnd()
+                    ? "steps"
+                    : "responding";
+        const completedSteps =
+            elapsed >= stepsEnd() ? steps.length : Math.max(0, Math.floor((elapsed - thinkingEnd()) / stepDuration));
+        const activeStep = phase === "steps" ? completedSteps : null;
         state = {
             phase,
             typedPrompt: characters
@@ -67,13 +121,24 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
             paused,
             elapsedMs: elapsed,
             timelineComplete,
+            activeStep,
+            completedSteps,
             stageReady: timelineComplete && ready,
         };
         options.onChange(state);
         if (!timelineComplete && !paused && !doc.hidden) {
             running = true;
             started = Date.now();
-            const boundary = elapsed < typing ? typing : elapsed < send ? send : total;
+            const boundary =
+                phase === "typing"
+                    ? typing
+                    : phase === "sending"
+                      ? send
+                      : phase === "thinking"
+                        ? thinkingEnd()
+                        : phase === "steps"
+                          ? thinkingEnd() + (completedSteps + 1) * stepDuration
+                          : total();
             timer = setTimeout(
                 () => {
                     capture();
@@ -84,6 +149,10 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
         }
     }
 
+    function reset() {
+        elapsed = reduced ? total() : 0;
+        update();
+    }
     function visibility() {
         capture();
         update();
@@ -91,7 +160,7 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
     function motionChange() {
         capture();
         reduced = motion?.matches === true;
-        if (reduced) elapsed = total;
+        if (reduced) elapsed = total();
         update();
     }
 
@@ -120,9 +189,8 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
         replay() {
             if (!destroyed) {
                 capture();
-                elapsed = reduced ? total : 0;
                 paused = false;
-                update();
+                reset();
             }
         },
         setPrompt(value) {
@@ -130,8 +198,21 @@ export function createPlayback(options: PlaybackOptions): PlaybackController {
             capture();
             prompt = value;
             characters = Array.from(value);
-            elapsed = reduced ? total : 0;
-            update();
+            reset();
+        },
+        setThinking(value) {
+            const next = value?.trim() ?? "";
+            if (destroyed || next === thinking) return;
+            capture();
+            thinking = next;
+            reset();
+        },
+        setSteps(value) {
+            const next = normalizeSteps(value);
+            if (destroyed || sameSteps(next, steps)) return;
+            capture();
+            steps = next;
+            reset();
         },
         setReady(value) {
             if (!destroyed) {

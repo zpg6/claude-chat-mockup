@@ -126,7 +126,7 @@ React accepts the same `animation` prop and renders Replay and Pause/Play contro
 </ClaudeWindow>
 ```
 
-The default timeline types for 2,200 ms, holds the send state for 300 ms, then waits 450 ms before showing the response. To change it, pass an options object:
+The default timeline types for 2,200 ms, holds the send state for 300 ms, then waits 450 ms before showing the response. Optional thinking and actions run between sending and that final response delay. To change it, pass an options object:
 
 ```ts
 animation: {
@@ -140,7 +140,25 @@ animation: {
 
 Durations are milliseconds. Negative durations become zero; nonfinite values use the defaults. Pause preserves the time left in the current phase. A hidden browser tab pauses the timeline automatically. `autoplay: false` waits for Play. `controls: false` hides the built-in buttons; vanilla callers can still use `chat.playback`. In React, manual start needs the built-in controls or a change to `autoplay: true`. Changing React timing options creates a fresh timeline.
 
-The timeline and host readiness are separate. `chat.playback.state.timelineComplete` means the presentation has finished. `stageReady` becomes true only when the timeline has finished and the real content is ready. If the host takes longer, the response shows its loading stage and the phase stays `waiting`. React uses the same rules with its `ready` prop. The state also includes `typedPrompt`, `paused` and `elapsedMs`. Its phases are `typing`, `sending`, `responding`, `waiting` and `complete`.
+Add a short intention and concrete actions with `thinking` and `steps`. Both vanilla and React support these fields:
+
+```ts
+thinking: "I'll prepare the design and its files.",
+steps: [
+    { label: "Choose the parts", logo: "P" },
+    { label: "Place and route the board" },
+    { label: "Prepare the outputs" },
+],
+animation: { thinkingDuration: 500, stepDuration: 400 },
+```
+
+Thinking adds 500 ms by default, and each action adds 400 ms. These durations apply only when the corresponding content exists. Blank thinking text and blank step labels add no time. Steps accept an optional `logo` using the tool logo's SVG/HTML or monogram convention. Only pass trusted markup as a logo.
+
+The intention appears first, followed by sequential active and completed actions. The final response, tool line and stage stay hidden until this timeline finishes. Static windows with explicit thinking or steps show them as completed content. The original timeline and static markup stay unchanged when these fields are absent.
+
+`playback.state.activeStep` is a zero-based index during the `steps` phase and `null` otherwise. `completedSteps` counts completed actions. Pause preserves remaining time in thinking and in each action. Reduced motion shows all actions complete immediately while retaining the real readiness gate. Updating `thinking` or `steps` restarts presentation, while equal text or recreated arrays with the same labels and logos preserve progress. Vanilla callers can use `setThinking(text?)` and `setSteps(steps?)`; omit the value to clear it.
+
+The timeline and host readiness are separate. `chat.playback.state.timelineComplete` means the presentation has finished. `stageReady` becomes true only when the timeline has finished and the real content is ready. If the host takes longer, the response shows its loading stage and the phase stays `waiting`. React uses the same rules with its `ready` prop. The state also includes `typedPrompt`, `paused` and `elapsedMs`. Its phases are `typing`, `sending`, `thinking`, `steps`, `responding`, `waiting` and `complete`.
 
 The built-in vanilla iframe treats its document's `load` event as readiness. For an app that loads its result after that event, mount an iframe as `stage.content` and call `chat.setReady()` when the result is actually usable. React callers own that signal through `ready`.
 
@@ -154,6 +172,8 @@ With `prefers-reduced-motion: reduce`, the final conversation appears immediatel
 
 | Prop          | Type                                      | Default              | Notes                                                   |
 | ------------- | ----------------------------------------- | -------------------- | ------------------------------------------------------- |
+| `thinking`    | `string`                                  | Omitted              | Short intention before the actions.                     |
+| `steps`       | `readonly ConversationStep[]`             | Omitted              | Concrete actions with optional logos.                   |
 | `animation`   | `boolean \| ConversationAnimationOptions` | `false`              | Opt-in conversation playback and controls.              |
 | `prompt`      | `string`                                  | —                    | The user's prompt bubble (required).                    |
 | `response`    | `ReactNode`                               | —                    | Claude's reply copy.                                    |
@@ -179,6 +199,8 @@ Same fields as options, with `stage: { src?, title?, height?, ready?, content? }
 | `el` / `stage` / `frame` | The root, the `.board-stage`, and the built-in iframe.                       |
 | `playback`               | Playback state and `play()`, `pause()`, `replay()`, or `null` when disabled. |
 | `setPrompt(text)`        | Replace the user prompt.                                                     |
+| `setThinking(text?)`     | Replace or clear the intention.                                              |
+| `setSteps(steps?)`       | Replace or clear actions. Equal content preserves playback.                  |
 | `setResponse(text)`      | Replace Claude's response copy.                                              |
 | `setToolTitle(text)`     | Replace the tool-line title.                                                 |
 | `setReady(ready?)`       | Reveal (or re-hide) the stage.                                               |
@@ -199,6 +221,8 @@ The window follows the viewer's `prefers-color-scheme` by default. Force a schem
 > **Inverting against your page?** Pass `theme` computed from your own `matchMedia("(prefers-color-scheme: dark)")` to make the Claude surface the _opposite_ of your site — a common landing-page look.
 
 ## Examples
+
+- [`examples/workflow.html`](examples/workflow.html) compares three thinking/action/output response patterns inside the same chat window. It uses a saved Copperlayer board render and genuine output links, with compressed illustrative timing.
 
 - [`examples/conversation.html`](examples/conversation.html) types a request, sends it and reveals a loaded iframe. It includes Replay/Pause controls, theme selection and a readiness hold for testing a late result. Run `pnpm build`, serve the repository, then open the file.
 
