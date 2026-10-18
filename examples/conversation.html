@@ -111,6 +111,10 @@
             const hold = document.querySelector("#hold");
             let loaded = false;
             const chat = ClaudeWindow({
+                model: "Opus 5.5",
+                effort: "Medium",
+                placeholder: "Write a message…",
+                greeting: "Hello, night owl",
                 prompt: "Design a pricing section with a highlighted Pro plan.",
                 response: "Here's a responsive pricing section with Pro highlighted.",
                 tool: { name: "claude", call: "create_artifact", title: "Pricing section", logo: "C" },

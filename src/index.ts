@@ -101,6 +101,7 @@ function windowMarkup(opts: ClaudeWindowOptions): string {
             <span class="claude-context" role="img" aria-label="Claude"><svg aria-hidden="true"><use href="#claude-svg"></use></svg><span class="claude-wordmark" aria-hidden="true"></span></span>
             <span class="claude-corner incognito" aria-hidden="true"><svg><use href="#anthropic-incognito"></use></svg></span>
         </div>
+        ${opts.animation && opts.greeting?.trim() ? `<div class="claude-greeting"><svg aria-hidden="true"><use href="#claude-svg"></use></svg><span>${esc(opts.greeting.trim())}</span></div>` : ""}
         <div class="claude-conversation">
             <div class="claude-user" data-ccp-prompt>${esc(opts.prompt)}</div>
             <div class="claude-response">
@@ -115,10 +116,11 @@ function windowMarkup(opts: ClaudeWindowOptions): string {
             <span class="claude-placeholder">${esc(placeholder)}</span>
             <div class="claude-compose-row" aria-hidden="true">
                 <svg class="claude-plus"><use href="#anthropic-plus"></use></svg>
+                <span class="claude-home-modes"><span class="claude-chat-mode">Chat</span><span>Cowork</span></span>
+                <span class="claude-manual-mode"><svg><use href="#claude-manual"></use></svg>Manual<svg class="claude-mode-chevron"><use href="#anthropic-chevron"></use></svg></span>
                 <span class="claude-model">${esc(model)} <em>${esc(effort)} <svg><use href="#anthropic-chevron"></use></svg></em></span>
                 <svg class="claude-mic"><use href="#anthropic-mic"></use></svg>
-                <svg class="claude-wave"><use href="#anthropic-voice"></use></svg>
-                ${opts.animation ? '<span class="claude-send" aria-hidden="true">↑</span>' : ""}
+                ${opts.animation ? '<span class="claude-send" aria-hidden="true"><svg><use href="#claude-send-arrow"></use></svg></span>' : ""}
             </div>
         </div>
         <div class="claude-footnote">${esc(footnote)}</div>
@@ -163,6 +165,7 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
 
     const promptEl = el.querySelector<HTMLElement>("[data-ccp-prompt]");
     const responseEl = el.querySelector<HTMLElement>(".claude-response-copy");
+    const greetingEl = el.querySelector<HTMLElement>(".claude-greeting");
     const titleEl = el.querySelector<HTMLElement>(".showcase-title");
     const stage = el.querySelector<HTMLElement>(".board-stage");
     const frame = stage?.querySelector<HTMLIFrameElement>(".mcp-frame") ?? null;
@@ -281,6 +284,11 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
                 el.dataset.ccpPhase = state.phase;
                 el.dataset.ccpPaused = String(state.paused);
                 typed.textContent = state.typedPrompt;
+                const home = state.phase === "typing" || state.phase === "sending";
+                if (greetingEl) {
+                    greetingEl.hidden = !home;
+                    greetingEl.setAttribute("aria-hidden", String(!home));
+                }
                 promptEl?.setAttribute("aria-hidden", String(state.phase === "typing" || state.phase === "sending"));
                 renderProgress(state);
                 stage?.classList.toggle("viewer-ready", state.stageReady);

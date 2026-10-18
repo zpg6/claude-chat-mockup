@@ -13,15 +13,16 @@
 
 .claude-window {
     /* dark surface — the default */
-    --cl-bg: #1f201e;
-    --cl-surface: #292a27;
-    --cl-surface2: #30312e;
-    --cl-line: #484944;
-    --cl-rail: #191a18;
-    --cl-text: #efede6;
+    --cl-bg: #151515;
+    --cl-surface: #20201f;
+    --cl-surface2: #2b2b29;
+    --cl-line: #4d4d4c;
+    --cl-rail: #181818;
+    --cl-text: #f0efec;
     --cl-muted: #aaa9a3;
     --cl-faint: #777873;
-    --cl-accent: #d97757;
+    --cl-accent: #cc7c5e;
+    --cl-send: #b96747;
     --cl-preview: #101418;
     --cl-shadow: 0 24px 64px rgba(42, 39, 33, 0.22);
 
@@ -170,10 +171,10 @@
 
 /* ---------- conversation ---------- */
 .claude-conversation {
-    padding: 8px 16px 8px;
+    padding: 18px 20px 18px;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 22px;
     background: var(--cl-bg);
     min-width: 0;
 }
@@ -217,22 +218,22 @@
 .claude-response-main {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
     min-width: 0;
     flex: 1;
 }
 .claude-response-copy {
     font:
-        400 12.5px/1.5 -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+        400 17px/1.55 Georgia,
+        "Times New Roman",
+        serif;
     color: var(--cl-text);
+    overflow-wrap: anywhere;
 }
 
 .claude-thinking {
     color: var(--cl-muted);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.5;
     overflow-wrap: anywhere;
 }
@@ -259,9 +260,9 @@
     display: flex;
     align-items: center;
     gap: 10px;
-    min-height: 25px;
+    min-height: 27px;
     color: var(--cl-text);
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.5;
 }
 .claude-step-marker {
@@ -448,43 +449,83 @@
 
 /* ---------- composer ---------- */
 .claude-composer {
-    margin: 2px 14px 10px;
-    min-height: 58px;
+    box-sizing: border-box;
+    margin: 2px 16px 12px;
+    min-height: 106px;
     border: 1px solid var(--cl-line);
-    border-radius: 14px;
+    border-radius: 20px;
     display: flex;
     flex-direction: column;
     justify-content: space-between;
-    padding: 9px 12px 7px;
+    gap: 18px;
+    padding: 15px 16px 12px;
     background: var(--cl-surface);
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    box-shadow:
+        0 0 0 1px color-mix(in srgb, var(--cl-line) 14%, transparent),
+        0 3px 8px rgb(0 0 0 / 8%);
 }
 .claude-placeholder {
-    font:
-        400 12px -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
     color: var(--cl-muted);
 }
 .claude-compose-row {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
+    color: var(--cl-text);
+    min-height: 28px;
+}
+.claude-plus,
+.claude-mic {
+    flex: none;
+    width: 21px;
+    height: 21px;
     color: var(--cl-text);
 }
-.claude-plus {
-    width: 20px;
-    height: 20px;
+.claude-home-modes {
+    display: none;
+    align-items: center;
+    gap: 2px;
+    padding: 2px;
+    border-radius: 8px;
+    background: var(--cl-surface2);
+    color: var(--cl-muted);
+    font-size: 12px;
+    line-height: 1.4;
+}
+.claude-home-modes > span {
+    padding: 4px 8px;
+    border: 1px solid transparent;
+    border-radius: 7px;
+}
+.claude-home-modes .claude-chat-mode {
+    background: color-mix(in srgb, var(--cl-text) 8%, var(--cl-surface2));
+    border-color: var(--cl-line);
     color: var(--cl-text);
+    box-shadow: 0 0 0 1px color-mix(in srgb, var(--cl-line) 25%, transparent);
+}
+.claude-manual-mode {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 12px;
+    white-space: nowrap;
+}
+.claude-manual-mode svg {
+    width: 17px;
+    height: 17px;
+}
+.claude-manual-mode .claude-mode-chevron {
+    width: 10px;
+    height: 10px;
+    color: var(--cl-muted);
 }
 .claude-model {
     margin-left: auto;
-    font:
-        500 10px -apple-system,
-        BlinkMacSystemFont,
-        "Segoe UI",
-        sans-serif;
+    white-space: nowrap;
+    font-size: 12px;
+    line-height: 1.5;
     color: var(--cl-text);
 }
 .claude-model em {
@@ -496,20 +537,43 @@
     margin-left: 3px;
 }
 .claude-model svg {
-    width: 10px;
-    height: 10px;
+    display: none;
 }
-.claude-mic,
-.claude-wave {
-    width: 20px;
-    height: 20px;
+.claude-greeting {
+    position: absolute;
+    bottom: calc(50% + 96px);
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    font:
+        400 clamp(24px, 3.8vw, 40px)/1.15 Georgia,
+        "Times New Roman",
+        serif;
+    letter-spacing: -0.04em;
+    text-align: center;
     color: var(--cl-text);
+}
+.claude-greeting span {
+    min-width: 0;
+    overflow-wrap: anywhere;
+}
+.claude-greeting[hidden] {
+    display: none;
+}
+.claude-greeting svg {
+    flex: none;
+    width: 35px;
+    height: 35px;
+    color: var(--cl-accent);
 }
 .claude-footnote {
     text-align: center;
     margin: -5px 18px 9px;
     font:
-        400 8.5px -apple-system,
+        400 9.5px -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
@@ -519,7 +583,7 @@
 /* Opt-in conversation playback. The final conversation reserves its space. */
 .claude-window[data-ccp-animation] .claude-app {
     position: relative;
-    padding-bottom: 170px;
+    padding-bottom: 190px;
 }
 .claude-window[data-ccp-animation] .claude-conversation {
     min-height: 280px;
@@ -539,10 +603,10 @@
 .claude-window[data-ccp-animation] .claude-composer {
     box-sizing: border-box;
     position: absolute;
-    top: calc(100% - 164px);
+    top: calc(100% - 184px);
     left: 0;
     right: 0;
-    height: 96px;
+    height: 106px;
     transition: top 0.5s cubic-bezier(0.22, 0.68, 0.18, 1);
 }
 .claude-window[data-ccp-animation] .claude-footnote {
@@ -555,6 +619,17 @@
 .claude-window[data-ccp-phase="typing"] .claude-composer,
 .claude-window[data-ccp-phase="sending"] .claude-composer {
     top: calc(50% - 48px);
+    height: 132px;
+    padding-top: 18px;
+    border-radius: 22px;
+}
+.claude-window[data-ccp-phase="typing"] .claude-home-modes,
+.claude-window[data-ccp-phase="sending"] .claude-home-modes {
+    display: inline-flex;
+}
+.claude-window[data-ccp-phase="typing"] .claude-manual-mode,
+.claude-window[data-ccp-phase="sending"] .claude-manual-mode {
+    display: none;
 }
 .claude-window[data-ccp-phase="typing"] .claude-user,
 .claude-window[data-ccp-phase="sending"] .claude-user,
@@ -591,30 +666,29 @@
     overflow: hidden;
     max-height: 44px;
     font:
-        400 13px/1.6 -apple-system,
+        400 15px/1.6 -apple-system,
         BlinkMacSystemFont,
         "Segoe UI",
         sans-serif;
 }
 .claude-window[data-ccp-phase="typing"] .claude-placeholder,
-.claude-window[data-ccp-phase="sending"] .claude-placeholder,
-.claude-window[data-ccp-phase="typing"] .claude-mic,
-.claude-window[data-ccp-phase="sending"] .claude-mic,
-.claude-window[data-ccp-phase="typing"] .claude-wave,
-.claude-window[data-ccp-phase="sending"] .claude-wave {
+.claude-window[data-ccp-phase="sending"] .claude-placeholder {
     display: none;
 }
 .claude-window[data-ccp-phase="typing"] .claude-send,
 .claude-window[data-ccp-phase="sending"] .claude-send {
     display: grid;
     place-items: center;
-    width: 25px;
-    height: 25px;
+    width: 32px;
+    height: 32px;
     flex: none;
-    border-radius: 7px;
-    background: var(--cl-accent);
-    color: var(--cl-bg);
-    font: 500 20px/1 sans-serif;
+    border-radius: 9px;
+    background: var(--cl-send);
+    color: #fff;
+}
+.claude-send svg {
+    width: 21px;
+    height: 21px;
 }
 .claude-window[data-ccp-phase="sending"] .claude-send {
     transform: scale(0.9);
@@ -713,10 +787,36 @@
     }
     .claude-composer {
         margin: 2px 10px 10px;
-        min-height: 54px;
+        min-height: 106px;
     }
 }
 @media (max-width: 420px) {
+    .claude-compose-row {
+        gap: 8px;
+    }
+    .claude-model,
+    .claude-manual-mode {
+        font-size: 11px;
+    }
+    .claude-home-modes {
+        font-size: 11px;
+    }
+    .claude-home-modes > span {
+        padding: 4px 6px;
+    }
+    .claude-window[data-ccp-phase="typing"] .claude-compose-row,
+    .claude-window[data-ccp-phase="sending"] .claude-compose-row {
+        flex-wrap: wrap;
+        row-gap: 8px;
+    }
+    .claude-window[data-ccp-phase="typing"] .claude-model,
+    .claude-window[data-ccp-phase="sending"] .claude-model {
+        margin-left: auto;
+    }
+    .claude-greeting svg {
+        width: 28px;
+        height: 28px;
+    }
     .claude-response {
         display: block;
     }
@@ -725,6 +825,26 @@
     }
     .board-stage {
         height: 250px;
+    }
+}
+@media (max-width: 360px) {
+    .claude-window[data-ccp-phase="typing"] .claude-composer,
+    .claude-window[data-ccp-phase="sending"] .claude-composer {
+        height: 164px;
+    }
+    .claude-window[data-ccp-phase="typing"] .claude-compose-row,
+    .claude-window[data-ccp-phase="sending"] .claude-compose-row {
+        display: grid;
+        grid-template-columns: 21px minmax(0, 1fr) 21px 32px;
+    }
+    .claude-home-modes {
+        grid-column: 2 / 5;
+        justify-self: start;
+    }
+    .claude-window[data-ccp-phase="typing"] .claude-model,
+    .claude-window[data-ccp-phase="sending"] .claude-model {
+        grid-column: 1 / 3;
+        justify-self: end;
     }
 }
 @media (prefers-reduced-motion: reduce) {

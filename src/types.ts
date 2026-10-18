@@ -80,6 +80,8 @@ export interface ConversationPlayback {
 export interface ClaudeWindowOptions {
     /** The user's prompt bubble text. */
     prompt: string;
+    /** Optional home greeting, shown only while animated typing or sending. */
+    greeting?: string;
     /** A short intention shown before the action steps and final response. */
     thinking?: string;
     /** Concrete actions shown in order. Blank labels are ignored. */

@@ -177,7 +177,7 @@
                     >Theme
                     <select id="theme">
                         <option value="light">Light</option>
-                        <option value="dark">Dark</option>
+                        <option value="dark" selected>Dark</option>
                         <option value="auto">System</option>
                     </select></label
                 >
@@ -252,6 +252,11 @@
                 const hero = document.querySelector("#hero");
                 let ready = false;
                 const chat = ClaudeWindow({
+                    model: "Opus 5.5",
+                    effort: "Medium",
+                    placeholder: "Write a message…",
+                    footnote: "Claude is AI and can make mistakes. Please double-check responses.",
+                    greeting: "Hello, night owl",
                     prompt: "Design a 12 V CAN node with four GPIOs and SWD.",
                     thinking: "Mapping the CAN and power connections.",
                     steps: [
@@ -267,7 +272,7 @@
                         logo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5H9L5 9v6l4 4h10M19 9h-8l-2 2v2l2 2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
                     },
                     stage: { content: frame, height: 360 },
-                    theme: "light",
+                    theme: theme.value,
                     animation: { responseDelay: 250 },
                 }).mount(hero);
                 const updateReady = () => chat.setReady(ready && !hold.checked);

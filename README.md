@@ -102,10 +102,11 @@ The factory injects the glyph sprite on first use — no setup step.
 
 ## Conversation playback
 
-Pass `animation: true` to type the prompt in the composer, show the send transition, then reveal the conversation. Static rendering remains the default.
+Pass `animation: true` to type the prompt in the composer, show the send transition, then reveal the conversation. Static rendering remains the default. Add `greeting: "Hello, night owl"` for the serif home greeting above the composer. It appears during typing and sending, then hides when the conversation begins. Changing the React greeting prop does not restart playback. Without animation, the greeting is omitted.
 
 ```ts
 const chat = ClaudeWindow({
+    greeting: "Hello, night owl",
     prompt: "Design a pricing section with a highlighted Pro plan.",
     response: "Here's the pricing section.",
     tool: { name: "claude", call: "create_artifact", title: "Pricing section" },
@@ -172,6 +173,7 @@ With `prefers-reduced-motion: reduce`, the final conversation appears immediatel
 
 | Prop          | Type                                      | Default              | Notes                                                   |
 | ------------- | ----------------------------------------- | -------------------- | ------------------------------------------------------- |
+| `greeting`    | `string`                                  | Omitted              | Home greeting during animated typing and sending.       |
 | `thinking`    | `string`                                  | Omitted              | Short intention before the actions.                     |
 | `steps`       | `readonly ConversationStep[]`             | Omitted              | Concrete actions with optional logos.                   |
 | `animation`   | `boolean \| ConversationAnimationOptions` | `false`              | Opt-in conversation playback and controls.              |
@@ -262,7 +264,7 @@ parent.postMessage(
 
 Use `ready: false` when loading or after a renderer failure, with an optional plain-text `error`. A true message requires a valid viewer SHA-256 string. The parent validates the exact iframe window, origin, protocol version and nonce. Document load and MCP initialization alone do not reveal the stage. The host should observe its genuine renderer's usable scene and report ready after paint.
 
-The parent sends `{ type: "copperlayer/preview-theme", version: 1, nonce, theme }` with `theme` set to `light`, `dark` or `auto`. The host owns the actual MCP bridge and viewer controls. Replay only restarts the surrounding conversation; it retains the same iframe, content and nonce. Hold result readiness can keep the loaded viewer hidden for testing. Historical PDF, fabrication and STL links stay below the chat as ordinary external artifacts.
+The parent sends `{ type: "copperlayer/preview-theme", version: 1, nonce, theme }` with `theme` set to `light`, `dark` or `auto`. The host owns the actual MCP bridge and viewer controls. Replay only restarts the surrounding conversation; it retains the same iframe, content and nonce. Hold result readiness can keep the loaded viewer hidden for testing. Historical PDF, fabrication and STL links stay below the chat as ordinary external artifacts. The example starts in Dark to match the supplied Claude references; Light and System remain available. Its model and effort text are illustrative labels supplied by the example.
 
 ## License
 

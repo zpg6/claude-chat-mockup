@@ -40,6 +40,8 @@ export type {
 export interface ClaudeWindowProps {
     /** The user's prompt bubble text. */
     prompt: string;
+    /** Optional home greeting, shown only while animated typing or sending. */
+    greeting?: string;
     /** A short intention before the actions and final response. */
     thinking?: string;
     /** Concrete illustrative actions. Blank labels are ignored. */
@@ -101,6 +103,7 @@ const Icon = ({ id, className }: { id: string; className?: string }) => (
 
 export function ClaudeWindow({
     prompt,
+    greeting,
     thinking,
     steps = [],
     response,
@@ -165,6 +168,7 @@ export function ClaudeWindow({
         playback.current?.setReady(ready);
     }, [ready]);
     const phase = state?.phase ?? "typing";
+    const home = phase === "typing" || phase === "sending";
     const timelineComplete = state?.timelineComplete === true;
     const progressVisible = hasProgress && phase !== "typing" && phase !== "sending";
     const finalHidden = enabled ? !timelineComplete : undefined;
@@ -213,6 +217,14 @@ export function ClaudeWindow({
                         <Icon id="anthropic-incognito" />
                     </span>
                 </div>
+                {enabled && greeting?.trim() && (
+                    <div className="claude-greeting" hidden={!home} aria-hidden={!home}>
+                        <svg aria-hidden="true">
+                            <use href="#claude-svg" />
+                        </svg>
+                        <span>{greeting.trim()}</span>
+                    </div>
+                )}
                 <div className="claude-conversation">
                     <div
                         className="claude-user"
@@ -303,6 +315,15 @@ export function ClaudeWindow({
                     <span className="claude-placeholder">{placeholder}</span>
                     <div className="claude-compose-row" aria-hidden="true">
                         <Icon id="anthropic-plus" className="claude-plus" />
+                        <span className="claude-home-modes">
+                            <span className="claude-chat-mode">Chat</span>
+                            <span>Cowork</span>
+                        </span>
+                        <span className="claude-manual-mode">
+                            <Icon id="claude-manual" />
+                            Manual
+                            <Icon id="anthropic-chevron" className="claude-mode-chevron" />
+                        </span>
                         <span className="claude-model">
                             {model}{" "}
                             <em>
@@ -310,10 +331,9 @@ export function ClaudeWindow({
                             </em>
                         </span>
                         <Icon id="anthropic-mic" className="claude-mic" />
-                        <Icon id="anthropic-voice" className="claude-wave" />
                         {enabled && (
                             <span className="claude-send" aria-hidden="true">
-                                ↑
+                                <Icon id="claude-send-arrow" />
                             </span>
                         )}
                     </div>

@@ -117,6 +117,9 @@
             function build(mount, theme) {
                 const dark = theme === "dark";
                 const chat = ClaudeWindow({
+                    model: "Opus 5.5",
+                    effort: "Medium",
+                    placeholder: "Write a message…",
                     prompt: "Design a pricing section for my SaaS landing page — three tiers, an annual toggle, and a highlighted Pro plan.",
                     response: "Here's a responsive pricing section with Pro highlighted and an annual toggle.",
                     tool: { name: "claude", call: "create_artifact", title: "Pricing Section" },
