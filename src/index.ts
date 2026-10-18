@@ -10,9 +10,19 @@
  */
 
 import { injectSymbols } from "./symbols";
+import { createPlayback, type PlaybackController } from "./playback";
 import type { ClaudeTheme, ClaudeWindowHandle, ClaudeWindowOptions, StageOptions, ToolCall } from "./types";
 
-export type { ClaudeTheme, ClaudeWindowHandle, ClaudeWindowOptions, StageOptions, ToolCall } from "./types";
+export type {
+    ClaudeTheme,
+    ClaudeWindowHandle,
+    ClaudeWindowOptions,
+    StageOptions,
+    ToolCall,
+    ConversationAnimationOptions,
+    ConversationPlayback,
+    ConversationPlaybackState,
+} from "./types";
 export { CLAUDE_SYMBOLS, CLAUDE_SYMBOLS_SVG, SYMBOLS_ID, injectSymbols } from "./symbols";
 
 const DEFAULTS = {
@@ -93,15 +103,18 @@ function windowMarkup(opts: ClaudeWindowOptions): string {
             </div>
         </div>
         <div class="claude-composer">
+            ${opts.animation ? '<span class="claude-typed-prompt" aria-hidden="true"><span data-ccp-typed></span><span class="claude-typing-caret"></span></span>' : ""}
             <span class="claude-placeholder">${esc(placeholder)}</span>
             <div class="claude-compose-row" aria-hidden="true">
                 <svg class="claude-plus"><use href="#anthropic-plus"></use></svg>
                 <span class="claude-model">${esc(model)} <em>${esc(effort)} <svg><use href="#anthropic-chevron"></use></svg></em></span>
                 <svg class="claude-mic"><use href="#anthropic-mic"></use></svg>
                 <svg class="claude-wave"><use href="#anthropic-voice"></use></svg>
+                ${opts.animation ? '<span class="claude-send" aria-hidden="true">↑</span>' : ""}
             </div>
         </div>
         <div class="claude-footnote">${esc(footnote)}</div>
+        ${opts.animation ? `<div class="claude-playback-status" role="status" aria-live="polite"></div>${typeof opts.animation === "object" && opts.animation.controls === false ? "" : '<div class="claude-playback-controls"><button type="button" data-ccp-replay>Replay</button><button type="button" data-ccp-toggle>Pause</button></div>'}` : ""}
     </div>`;
 }
 
@@ -145,9 +158,19 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
     const titleEl = el.querySelector<HTMLElement>(".showcase-title");
     const stage = el.querySelector<HTMLElement>(".board-stage");
     const frame = stage?.querySelector<HTMLIFrameElement>(".mcp-frame") ?? null;
+    let playback: PlaybackController | null = null;
+    let destroyed = false;
+    let loadFrame: number | undefined;
 
     const setReady = (ready = true): void => {
-        stage?.classList.toggle("viewer-ready", ready);
+        if (destroyed) return;
+        if (playback) playback.setReady(ready);
+        else stage?.classList.toggle("viewer-ready", ready);
+    };
+    const onFrameLoad = () => {
+        const view = doc.defaultView;
+        if (view?.requestAnimationFrame) loadFrame = view.requestAnimationFrame(() => setReady(true));
+        else setReady(true);
     };
 
     // Wire up the stage: custom content, or an auto-revealing iframe.
@@ -161,22 +184,65 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
                 typeof options.stage.height === "number" ? `${options.stage.height}px` : options.stage.height;
         }
         if (frame && options.stage.src) {
-            frame.addEventListener(
-                "load",
-                () => (globalThis.requestAnimationFrame ?? ((cb: FrameRequestCallback) => cb(0)))(() => setReady(true)),
-                { once: true }
-            );
+            frame.addEventListener("load", onFrameLoad, { once: true });
             frame.src = options.stage.src;
         }
         if (options.stage.ready) setReady(true);
+    }
+
+    const toggle = el.querySelector<HTMLButtonElement>("[data-ccp-toggle]");
+    const replay = el.querySelector<HTMLButtonElement>("[data-ccp-replay]");
+    const togglePlayback = () => (playback?.state.paused ? playback.play() : playback?.pause());
+    const replayPlayback = () => playback?.replay();
+    if (options.animation) {
+        const typed = el.querySelector<HTMLElement>("[data-ccp-typed]")!;
+        const response = el.querySelector<HTMLElement>(".claude-response")!;
+        const status = el.querySelector<HTMLElement>(".claude-playback-status")!;
+        el.dataset.ccpAnimation = "";
+        playback = createPlayback({
+            prompt: options.prompt,
+            ready: options.stage?.ready === true,
+            hasStage: stage !== null,
+            document: doc,
+            animation: typeof options.animation === "object" ? options.animation : {},
+            onChange(state) {
+                el.dataset.ccpPhase = state.phase;
+                el.dataset.ccpPaused = String(state.paused);
+                typed.textContent = state.typedPrompt;
+                promptEl?.setAttribute("aria-hidden", String(state.phase === "typing" || state.phase === "sending"));
+                response.setAttribute("aria-hidden", String(!state.timelineComplete));
+                stage?.classList.toggle("viewer-ready", state.stageReady);
+                if (toggle) {
+                    toggle.textContent = state.paused ? "Play" : "Pause";
+                    toggle.disabled = state.timelineComplete;
+                }
+                const message =
+                    state.phase === "typing"
+                        ? "Typing the example request."
+                        : state.phase === "sending"
+                          ? "Sending the example request."
+                          : state.phase === "responding"
+                            ? "Request sent."
+                            : state.phase === "waiting"
+                              ? "Waiting for the result to be ready."
+                              : "Example conversation complete.";
+                if (status.textContent !== message) status.textContent = message;
+            },
+        });
+        toggle?.addEventListener("click", togglePlayback);
+        replay?.addEventListener("click", replayPlayback);
     }
 
     const handle: ClaudeWindowHandle = {
         el,
         stage,
         frame,
+        get playback() {
+            return playback;
+        },
         setPrompt(text) {
             if (promptEl) promptEl.textContent = text;
+            playback?.setPrompt(text);
         },
         setResponse(text) {
             if (responseEl) responseEl.textContent = text;
@@ -198,6 +264,12 @@ export function ClaudeWindow(options: ClaudeWindowOptions): ClaudeWindowHandle {
             return handle;
         },
         destroy() {
+            destroyed = true;
+            playback?.destroy();
+            frame?.removeEventListener("load", onFrameLoad);
+            if (loadFrame !== undefined) doc.defaultView?.cancelAnimationFrame(loadFrame);
+            toggle?.removeEventListener("click", togglePlayback);
+            replay?.removeEventListener("click", replayPlayback);
             el.remove();
         },
     };

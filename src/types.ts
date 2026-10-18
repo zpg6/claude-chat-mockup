@@ -34,6 +34,34 @@ export interface StageOptions {
 /** Colour scheme for the window surface. `"auto"` follows `prefers-color-scheme`. */
 export type ClaudeTheme = "auto" | "light" | "dark";
 
+/** Opt-in prompt, send and response playback. Durations are milliseconds. */
+export interface ConversationAnimationOptions {
+    autoplay?: boolean;
+    controls?: boolean;
+    typingDuration?: number;
+    sendDelay?: number;
+    responseDelay?: number;
+}
+
+export interface ConversationPlaybackState {
+    readonly phase: "typing" | "sending" | "responding" | "waiting" | "complete";
+    readonly typedPrompt: string;
+    readonly paused: boolean;
+    readonly elapsedMs: number;
+    /** The presentation finished its timeline, independently of host readiness. */
+    readonly timelineComplete: boolean;
+    /** Both the presentation and the actual host content are ready. */
+    readonly stageReady: boolean;
+}
+
+export interface ConversationPlayback {
+    readonly state: ConversationPlaybackState;
+    play(): void;
+    pause(): void;
+    /** Replay the presentation without reloading its content or calling the host. */
+    replay(): void;
+}
+
 /** Options accepted by the vanilla {@link ClaudeWindow} factory. */
 export interface ClaudeWindowOptions {
     /** The user's prompt bubble text. */
@@ -60,6 +88,8 @@ export interface ClaudeWindowOptions {
     className?: string;
     /** Document to build in (for SSR/testing). Default `globalThis.document`. */
     document?: Document;
+    /** Animate the prompt before showing the conversation. Omitted by default. */
+    animation?: boolean | ConversationAnimationOptions;
 }
 
 /** Live handle returned by the vanilla {@link ClaudeWindow} factory. */
@@ -70,6 +100,8 @@ export interface ClaudeWindowHandle {
     readonly stage: HTMLElement | null;
     /** The built-in `.mcp-frame` iframe, or `null` (no stage / custom content). */
     readonly frame: HTMLIFrameElement | null;
+    /** Presentation controls, or null when animation is disabled. */
+    readonly playback: ConversationPlayback | null;
     /** Replace the user prompt text. */
     setPrompt(text: string): void;
     /** Replace Claude's response copy. */

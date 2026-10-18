@@ -440,6 +440,152 @@
     color: var(--cl-faint);
 }
 
+/* Opt-in conversation playback. The final conversation reserves its space. */
+.claude-window[data-ccp-animation] .claude-app {
+    position: relative;
+    padding-bottom: 154px;
+}
+.claude-window[data-ccp-animation] .claude-conversation {
+    min-height: 280px;
+}
+.claude-window[data-ccp-animation] .claude-tool-line {
+    max-width: 100%;
+}
+.claude-window[data-ccp-animation] .claude-user {
+    overflow-wrap: anywhere;
+}
+.claude-window[data-ccp-animation] .claude-user,
+.claude-window[data-ccp-animation] .claude-response {
+    transition:
+        opacity 0.35s ease,
+        transform 0.45s ease;
+}
+.claude-window[data-ccp-animation] .claude-composer {
+    box-sizing: border-box;
+    position: absolute;
+    top: calc(100% - 148px);
+    left: 0;
+    right: 0;
+    height: 96px;
+    transition: top 0.5s cubic-bezier(0.22, 0.68, 0.18, 1);
+}
+.claude-window[data-ccp-animation] .claude-footnote {
+    position: absolute;
+    bottom: 34px;
+    left: 0;
+    right: 0;
+    margin-bottom: 7px;
+}
+.claude-window[data-ccp-phase="typing"] .claude-composer,
+.claude-window[data-ccp-phase="sending"] .claude-composer {
+    top: calc(50% - 48px);
+}
+.claude-window[data-ccp-phase="typing"] .claude-user,
+.claude-window[data-ccp-phase="sending"] .claude-user,
+.claude-window[data-ccp-phase="typing"] .claude-response,
+.claude-window[data-ccp-phase="sending"] .claude-response,
+.claude-window[data-ccp-phase="responding"] .claude-response {
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px);
+}
+.claude-window[data-ccp-animation] .claude-typed-prompt,
+.claude-window[data-ccp-animation] .claude-send {
+    display: none;
+}
+.claude-window[data-ccp-phase="typing"] .claude-typed-prompt,
+.claude-window[data-ccp-phase="sending"] .claude-typed-prompt {
+    display: block;
+    overflow-wrap: anywhere;
+    overflow: hidden;
+    max-height: 44px;
+    font:
+        400 13px/1.6 -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+.claude-window[data-ccp-phase="typing"] .claude-placeholder,
+.claude-window[data-ccp-phase="sending"] .claude-placeholder,
+.claude-window[data-ccp-phase="typing"] .claude-mic,
+.claude-window[data-ccp-phase="sending"] .claude-mic,
+.claude-window[data-ccp-phase="typing"] .claude-wave,
+.claude-window[data-ccp-phase="sending"] .claude-wave {
+    display: none;
+}
+.claude-window[data-ccp-phase="typing"] .claude-send,
+.claude-window[data-ccp-phase="sending"] .claude-send {
+    display: grid;
+    place-items: center;
+    width: 25px;
+    height: 25px;
+    flex: none;
+    border-radius: 7px;
+    background: var(--cl-accent);
+    color: var(--cl-bg);
+    font: 500 20px/1 sans-serif;
+}
+.claude-window[data-ccp-phase="sending"] .claude-send {
+    transform: scale(0.9);
+    opacity: 0.75;
+}
+.claude-typing-caret {
+    display: inline-block;
+    height: 1em;
+    border-left: 1px solid var(--cl-accent);
+    margin-left: 2px;
+    vertical-align: -0.1em;
+    animation: claude-caret 0.8s steps(1) infinite;
+}
+.claude-window[data-ccp-paused="true"] .claude-typing-caret {
+    animation-play-state: paused;
+}
+@keyframes claude-caret {
+    50% {
+        opacity: 0;
+    }
+}
+.claude-window[data-ccp-animation] .board-stage:not(.viewer-ready) > .mcp-frame,
+.claude-window[data-ccp-animation] .board-stage:not(.viewer-ready) > .board-stage-content {
+    visibility: hidden;
+}
+.claude-playback-status {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+}
+.claude-playback-controls {
+    position: absolute;
+    bottom: 9px;
+    right: 14px;
+    display: flex;
+    gap: 6px;
+}
+.claude-playback-controls button {
+    padding: 3px 8px;
+    border: 1px solid var(--cl-line);
+    border-radius: 6px;
+    background: var(--cl-surface);
+    color: var(--cl-muted);
+    font:
+        400 10px/1.5 -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+    cursor: pointer;
+}
+.claude-playback-controls button:focus-visible {
+    outline: 2px solid var(--cl-accent);
+    outline-offset: 2px;
+}
+.claude-playback-controls button:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+
 /* ---------- responsive ---------- */
 @media (max-width: 720px) {
     .claude-window {
@@ -496,5 +642,13 @@
     .board-loader {
         transition-duration: 0.01ms;
         transition-delay: 0s;
+    }
+    .claude-window[data-ccp-animation] .claude-composer,
+    .claude-window[data-ccp-animation] .claude-user,
+    .claude-window[data-ccp-animation] .claude-response {
+        transition: none;
+    }
+    .claude-window[data-ccp-animation] .claude-typing-caret {
+        animation: none;
     }
 }

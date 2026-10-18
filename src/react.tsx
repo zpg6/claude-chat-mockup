@@ -17,11 +17,18 @@
  * ```
  */
 
-import { useEffect, type CSSProperties, type ReactNode } from "react";
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from "react";
 import { CLAUDE_SYMBOLS, SYMBOLS_ID, injectSymbols } from "./symbols";
-import type { ClaudeTheme, ToolCall } from "./types";
+import { createPlayback, type PlaybackController } from "./playback";
+import type { ClaudeTheme, ToolCall, ConversationAnimationOptions, ConversationPlaybackState } from "./types";
 
-export type { ClaudeTheme, ToolCall } from "./types";
+export type {
+    ClaudeTheme,
+    ToolCall,
+    ConversationAnimationOptions,
+    ConversationPlayback,
+    ConversationPlaybackState,
+} from "./types";
 
 export interface ClaudeWindowProps {
     /** The user's prompt bubble text. */
@@ -55,6 +62,8 @@ export interface ClaudeWindowProps {
     className?: string;
     /** Inline style on the root. */
     style?: CSSProperties;
+    /** Animate the prompt before showing the conversation. Omitted by default. */
+    animation?: boolean | ConversationAnimationOptions;
 }
 
 /**
@@ -94,11 +103,49 @@ export function ClaudeWindow({
     stageHeight,
     className,
     style,
+    animation,
 }: ClaudeWindowProps): React.JSX.Element {
     // Fallback injection for consumers who don't render <ClaudeSymbols /> themselves.
     useEffect(() => {
         injectSymbols();
     }, []);
+
+    const enabled = !!animation;
+    const options = typeof animation === "object" ? animation : {};
+    const { autoplay, typingDuration, sendDelay, responseDelay } = options;
+    const hasStage = children != null;
+    const latest = useRef({ prompt, ready });
+    latest.current = { prompt, ready };
+    const playback = useRef<PlaybackController | null>(null);
+    const [state, setState] = useState<ConversationPlaybackState | null>(null);
+    useEffect(() => {
+        if (!enabled) {
+            setState(null);
+            return;
+        }
+        const controller = createPlayback({
+            ...latest.current,
+            hasStage,
+            document,
+            animation: { autoplay, typingDuration, sendDelay, responseDelay },
+            onChange: setState,
+        });
+        playback.current = controller;
+        return () => {
+            controller.destroy();
+            playback.current = null;
+        };
+    }, [enabled, autoplay, typingDuration, sendDelay, responseDelay, hasStage]);
+    useEffect(() => {
+        playback.current?.setPrompt(prompt);
+    }, [prompt]);
+    useEffect(() => {
+        playback.current?.setReady(ready);
+    }, [ready]);
+    const phase = state?.phase ?? "typing";
+    const timelineComplete = state?.timelineComplete === true;
+    const stageReady = enabled ? state?.stageReady === true : ready;
+    const paused = state?.paused ?? autoplay === false;
 
     const stageStyle: CSSProperties | undefined =
         stageHeight != null
@@ -111,6 +158,9 @@ export function ClaudeWindow({
             aria-label="Claude conversation"
             data-theme={theme === "auto" ? undefined : theme}
             style={style}
+            data-ccp-animation={enabled ? "" : undefined}
+            data-ccp-phase={enabled ? phase : undefined}
+            data-ccp-paused={enabled ? String(paused) : undefined}
         >
             <aside className="claude-rail" aria-hidden="true">
                 <span className="claude-rail-toggle">
@@ -139,10 +189,14 @@ export function ClaudeWindow({
                     </span>
                 </div>
                 <div className="claude-conversation">
-                    <div className="claude-user" data-ccp-prompt>
+                    <div
+                        className="claude-user"
+                        data-ccp-prompt
+                        aria-hidden={enabled ? phase === "typing" || phase === "sending" : undefined}
+                    >
                         {prompt}
                     </div>
-                    <div className="claude-response">
+                    <div className="claude-response" aria-hidden={enabled ? !timelineComplete : undefined}>
                         <div className="claude-avatar" aria-hidden="true">
                             <Icon id="claude-svg" />
                         </div>
@@ -160,7 +214,7 @@ export function ClaudeWindow({
                             )}
                             {children != null && (
                                 <div
-                                    className={["board-stage", ready ? "viewer-ready" : ""].join(" ").trim()}
+                                    className={["board-stage", stageReady ? "viewer-ready" : ""].join(" ").trim()}
                                     style={stageStyle}
                                 >
                                     <div className="board-loader" aria-hidden="true" />
@@ -171,6 +225,12 @@ export function ClaudeWindow({
                     </div>
                 </div>
                 <div className="claude-composer">
+                    {enabled && (
+                        <span className="claude-typed-prompt" aria-hidden="true">
+                            <span data-ccp-typed>{state?.typedPrompt ?? ""}</span>
+                            <span className="claude-typing-caret" />
+                        </span>
+                    )}
                     <span className="claude-placeholder">{placeholder}</span>
                     <div className="claude-compose-row" aria-hidden="true">
                         <Icon id="anthropic-plus" className="claude-plus" />
@@ -182,9 +242,43 @@ export function ClaudeWindow({
                         </span>
                         <Icon id="anthropic-mic" className="claude-mic" />
                         <Icon id="anthropic-voice" className="claude-wave" />
+                        {enabled && (
+                            <span className="claude-send" aria-hidden="true">
+                                ↑
+                            </span>
+                        )}
                     </div>
                 </div>
                 <div className="claude-footnote">{footnote}</div>
+                {enabled && (
+                    <>
+                        <div className="claude-playback-status" role="status" aria-live="polite">
+                            {phase === "typing"
+                                ? "Typing the example request."
+                                : phase === "sending"
+                                  ? "Sending the example request."
+                                  : phase === "responding"
+                                    ? "Request sent."
+                                    : phase === "waiting"
+                                      ? "Waiting for the result to be ready."
+                                      : "Example conversation complete."}
+                        </div>
+                        {options.controls !== false && (
+                            <div className="claude-playback-controls">
+                                <button type="button" onClick={() => playback.current?.replay()}>
+                                    Replay
+                                </button>
+                                <button
+                                    type="button"
+                                    disabled={timelineComplete}
+                                    onClick={() => (paused ? playback.current?.play() : playback.current?.pause())}
+                                >
+                                    {paused ? "Play" : "Pause"}
+                                </button>
+                            </div>
+                        )}
+                    </>
+                )}
             </div>
         </div>
     );
