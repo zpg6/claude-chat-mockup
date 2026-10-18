@@ -2,7 +2,6 @@
     "title": "Molex CAN Node",
     "revision": "fd707652ff06",
     "boardRender": {
-        "file": "board.png",
         "sha256": "a18abab5eccb051bf0878970449d18cd3b0602fa32bd084cd40f9856dd9c50f5",
         "source": "https://copperlayer.ai/mcpui/molex_can_node_hero-a18abab5eccb051bf0878970449d18cd3b0602fa32bd084cd40f9856dd9c50f5.png"
     },
@@ -33,20 +32,21 @@
             "bytes": 268820
         }
     ],
-    "note": "Saved historical example outputs. Replay presents these existing artifacts without regenerating or certifying a design. The datasheet retains its original branding.",
-    "dockGlyphs": {
-        "repository": "https://github.com/zpg6/copperlayer",
-        "revision": "ac80239e34f4b8cac61b1e6e833fce196b882fa4",
-        "path": "agent-tools/viewer/assets/viewer.html",
-        "sourceSha256": "b2d78a26abf69023cd44778ece41a635b643020102d8f7e30f8d572d5d62c01b",
-        "definition": "FILE_GLYPHS",
-        "line": 3858,
-        "mapping": {
-            "board": "pcb",
-            "housing": "model",
-            "datasheet": "doc",
-            "fabrication": "fab"
+    "note": "The example embeds a configured genuine MCP viewer host. Its implementation remains outside this public repository. Listed output files belong to the saved historical Molex CAN Node example; replay does not regenerate them.",
+    "viewer": {
+        "mode": "Configured external iframe; no viewer implementation is bundled",
+        "queryParameter": "viewer",
+        "configurationExample": "http://127.0.0.1:4188/preview.html",
+        "readinessProtocol": {
+            "type": "copperlayer/preview-state",
+            "version": 1,
+            "fields": ["nonce", "ready", "error?", "viewerSha256"],
+            "validation": "Exact iframe source and origin, per-iframe nonce, boolean readiness, SHA-256 required for ready:true"
         },
-        "note": "Path and rect markup copied verbatim from the existing MCP export-file tree icons, using its viewBox and stroke styling. These are not a preexisting four-item dock."
+        "themeProtocol": {
+            "type": "copperlayer/preview-theme",
+            "version": 1,
+            "fields": ["nonce", "theme"]
+        }
     }
 }

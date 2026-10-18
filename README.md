@@ -222,11 +222,47 @@ The window follows the viewer's `prefers-color-scheme` by default. Force a schem
 
 ## Examples
 
-- [`examples/workflow.html`](examples/workflow.html) compares a bottom dock, floating tray and side dock inside the same render area. Thinking and numbered actions lead into a saved Copperlayer board render, datasheet preview and genuine output links, with compressed illustrative timing.
+- [`examples/workflow.html`](examples/workflow.html) puts a genuine externally hosted MCP viewer inside the thinking/action sequence. It requires an explicit viewer URL and readiness handshake; no app UI is recreated or bundled.
 
 - [`examples/conversation.html`](examples/conversation.html) types a request, sends it and reveals a loaded iframe. It includes Replay/Pause controls, theme selection and a readiness hold for testing a late result. Run `pnpm build`, serve the repository, then open the file.
 
 - [`examples/vanilla.html`](examples/vanilla.html) — a standalone page with theme toggles and a live `setReady` / `setPrompt` demo. Run `npm run build`, then serve the folder and open it.
+
+### Genuine MCP viewer example
+
+Build and serve this repository. The task-local Copperlayer host allows this preview on port 4187:
+
+```sh
+pnpm build
+python3 -m http.server 4187 --bind 127.0.0.1
+```
+
+With a compatible viewer host already running separately on port 4188, open:
+
+```text
+/examples/workflow.html?viewer=http%3A%2F%2F127.0.0.1%3A4188%2Fpreview.html
+```
+
+The configured URL must be absolute HTTP or HTTPS without embedded credentials. Without `?viewer`, the page shows setup instructions. A local Copperlayer host can serve the exact current private MCP app separately; its implementation is not copied into this public package. The ordinary Conversation example remains self-contained.
+
+The example adds a fresh `previewNonce` query parameter for each configured iframe instance, before its initial navigation. The host must report actual app readiness with this message:
+
+```ts
+parent.postMessage(
+    {
+        type: "copperlayer/preview-state",
+        version: 1,
+        nonce: new URLSearchParams(location.search).get("previewNonce"),
+        ready: true,
+        viewerSha256: "<64 lowercase hexadecimal characters>",
+    },
+    "<embedding page origin>"
+);
+```
+
+Use `ready: false` when loading or after a renderer failure, with an optional plain-text `error`. A true message requires a valid viewer SHA-256 string. The parent validates the exact iframe window, origin, protocol version and nonce. Document load and MCP initialization alone do not reveal the stage. The host should observe its genuine renderer's usable scene and report ready after paint.
+
+The parent sends `{ type: "copperlayer/preview-theme", version: 1, nonce, theme }` with `theme` set to `light`, `dark` or `auto`. The host owns the actual MCP bridge and viewer controls. Replay only restarts the surrounding conversation; it retains the same iframe, content and nonce. Hold result readiness can keep the loaded viewer hidden for testing. Historical PDF, fabrication and STL links stay below the chat as ordinary external artifacts.
 
 ## License
 
