@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title>Genuine MCP viewer · claude-chat-mockup</title>
+        <link rel="stylesheet" href="../dist/style.css" />
+        <style>
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                margin: 0;
+                padding: 40px 20px 56px;
+                background: #eeece6;
+                color: #282722;
+                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+            }
+            main {
+                max-width: 760px;
+                margin: 0 auto;
+            }
+            header {
+                max-width: 570px;
+                margin: 0 0 24px;
+            }
+            .back {
+                display: inline-block;
+                color: #77756e;
+                font-size: 12px;
+                margin-bottom: 18px;
+                text-underline-offset: 3px;
+            }
+            h1 {
+                font-size: clamp(26px, 5vw, 38px);
+                line-height: 1.15;
+                letter-spacing: -0.04em;
+                font-weight: 500;
+                margin: 0 0 12px;
+            }
+            p {
+                font-size: 14px;
+                line-height: 1.6;
+                color: #77756e;
+                margin: 0;
+            }
+            .settings {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                gap: 12px 24px;
+                margin: 18px 0 14px;
+                font-size: 12px;
+            }
+            label {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+            }
+            select {
+                font: inherit;
+                padding: 4px;
+                background: transparent;
+                color: inherit;
+                border: 1px solid #d3d0c8;
+                border-radius: 5px;
+            }
+            input {
+                accent-color: #b85a3a;
+            }
+            .note {
+                margin-top: 14px;
+                font-size: 11px;
+            }
+            .note a,
+            .setup a,
+            .outputs a {
+                color: inherit;
+                text-underline-offset: 2px;
+            }
+            .setup {
+                padding: 20px;
+                border: 1px solid #d3d0c8;
+                border-radius: 10px;
+                background: #f7f6f2;
+            }
+            .setup h2 {
+                font-size: 15px;
+                font-weight: 500;
+                margin: 0 0 8px;
+            }
+            .setup p {
+                font-size: 12px;
+            }
+            .setup code {
+                overflow-wrap: anywhere;
+                font-size: 11px;
+            }
+            .setup[hidden],
+            .settings[hidden],
+            #hero[hidden] {
+                display: none;
+            }
+            #hero {
+                min-width: 0;
+            }
+            #viewer-status {
+                overflow-wrap: anywhere;
+            }
+            .outputs {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px 16px;
+                padding-top: 15px;
+                margin-top: 15px;
+                border-top: 1px solid #d3d0c8;
+                font-size: 11px;
+                color: #77756e;
+            }
+            .outputs span {
+                width: 100%;
+                font-size: 10px;
+            }
+            details.note {
+                color: #77756e;
+            }
+            details.note summary {
+                cursor: pointer;
+            }
+            #viewer-sha {
+                display: block;
+                margin-top: 6px;
+                font-size: 10px;
+                overflow-wrap: anywhere;
+            }
+            button:focus-visible,
+            a:focus-visible,
+            select:focus-visible,
+            input:focus-visible,
+            summary:focus-visible {
+                outline: 2px solid #b85a3a;
+                outline-offset: 3px;
+            }
+            @media (max-width: 420px) {
+                body {
+                    padding: 24px 12px 40px;
+                }
+                .claude-step {
+                    font-size: 11px;
+                    gap: 8px;
+                }
+            }
+        </style>
+    </head>
+    <body>
+        <main>
+            <header>
+                <a class="back" href="./conversation.html">← Compare with Conversation</a>
+                <h1>The actual MCP app, inside the conversation.</h1>
+                <p>A short intention, numbered actions, then the genuine Copperlayer viewer.</p>
+            </header>
+            <section class="setup" id="setup">
+                <h2>Connect a genuine viewer host</h2>
+                <p id="setup-message">This example needs a viewer host that reports when its real content is ready.</p>
+                <p class="note">
+                    <a id="local-preview" href="?viewer=http%3A%2F%2F127.0.0.1%3A4188%2Fpreview.html"
+                        >Open with the local MCP preview host ↗</a
+                    >
+                </p>
+                <p class="note">
+                    Or set <code>?viewer=https://your-host.example/preview.html</code>. The host protocol is documented
+                    in the README.
+                </p>
+            </section>
+            <div class="settings" id="settings" hidden>
+                <label
+                    >Theme
+                    <select id="theme">
+                        <option value="light">Light</option>
+                        <option value="dark" selected>Dark</option>
+                        <option value="auto">System</option>
+                    </select></label
+                >
+                <label><input id="hold" type="checkbox" /> Hold result readiness</label>
+            </div>
+            <div id="hero" hidden></div>
+            <p id="viewer-status" class="note" role="status" aria-live="polite"></p>
+            <p class="note">
+                Current MCP UI with a saved Molex CAN Node design from August 2026. Playback is compressed; Replay
+                reuses the loaded viewer. <a href="./workflow-assets/provenance.json">Output sources</a>.
+            </p>
+            <nav class="outputs" aria-label="Saved example files">
+                <span>Saved example files</span>
+                <a
+                    href="https://copperlayer.ai/mcpui/molex_can_node_hero-f70397ceee1875978c86746e104e83fb0b3cfc168363bdf16b2b87719e7206de.datasheet.pdf"
+                    target="_blank"
+                    rel="noopener"
+                    >Datasheet · PDF ↗</a
+                >
+                <a
+                    href="https://copperlayer.ai/mcpui/molex_can_node_hero-8fbbd32ca6f59e3c7c11152d202e8203787ad328e72640c0815bc2a19d39691b.fab.zip"
+                    target="_blank"
+                    rel="noopener"
+                    >Fabrication · ZIP ↗</a
+                >
+                <a
+                    href="https://copperlayer.ai/mcpui/after-gerbers/housing/base-print.stl"
+                    target="_blank"
+                    rel="noopener"
+                    >Housing base · STL ↗</a
+                >
+                <a
+                    href="https://copperlayer.ai/mcpui/after-gerbers/housing/lid-print.stl"
+                    target="_blank"
+                    rel="noopener"
+                    >Housing lid · STL ↗</a
+                >
+            </nav>
+            <details class="note" id="source-details" hidden>
+                <summary>Embedded viewer source</summary>
+                <code id="viewer-sha"></code>
+            </details>
+        </main>
+        <script type="module">
+            import { ClaudeWindow } from "../dist/index.mjs";
+
+            function mountViewer() {
+                const configured = new URLSearchParams(location.search).get("viewer");
+                if (!configured) return;
+                let viewer;
+                try {
+                    viewer = new URL(configured);
+                    if (!["http:", "https:"].includes(viewer.protocol) || viewer.username || viewer.password)
+                        throw new Error();
+                } catch {
+                    document.querySelector("#setup-message").textContent =
+                        "The viewer URL must be an absolute HTTP or HTTPS URL without embedded credentials.";
+                    return;
+                }
+                const nonce = Array.from(crypto.getRandomValues(new Uint8Array(16)), byte =>
+                    byte.toString(16).padStart(2, "0")
+                ).join("");
+                viewer.searchParams.set("previewNonce", nonce);
+                const origin = viewer.origin;
+                const frame = document.createElement("iframe");
+                frame.title = "Interactive Copperlayer MCP viewer";
+                frame.allowFullscreen = true;
+                frame.referrerPolicy = "origin";
+                const hold = document.querySelector("#hold");
+                const theme = document.querySelector("#theme");
+                const status = document.querySelector("#viewer-status");
+                const hero = document.querySelector("#hero");
+                let ready = false;
+                const chat = ClaudeWindow({
+                    model: "Opus 5.5",
+                    effort: "Medium",
+                    placeholder: "Write a message…",
+                    footnote: "Claude is AI and can make mistakes. Please double-check responses.",
+                    greeting: "Hello, night owl",
+                    prompt: "Design a 12 V CAN node with four GPIOs and SWD.",
+                    thinking: "Mapping the CAN and power connections.",
+                    steps: [
+                        { label: "Resolve CAN and power parts" },
+                        { label: "Place and route the board" },
+                        { label: "Prepare the datasheet and fabrication files" },
+                    ],
+                    response: "Here are the board and design files.",
+                    tool: {
+                        name: "copperlayer.ai",
+                        call: "board_render",
+                        title: "Molex CAN Node",
+                        logo: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M19 5H9L5 9v6l4 4h10M19 9h-8l-2 2v2l2 2h8" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+                    },
+                    stage: { content: frame, height: 360 },
+                    theme: theme.value,
+                    animation: { responseDelay: 250 },
+                }).mount(hero);
+                const updateReady = () => chat.setReady(ready && !hold.checked);
+                const sendTheme = () =>
+                    frame.contentWindow?.postMessage(
+                        { type: "copperlayer/preview-theme", version: 1, nonce, theme: theme.value },
+                        origin
+                    );
+                const receiveState = event => {
+                    if (event.source !== frame.contentWindow || event.origin !== origin) return;
+                    const message = event.data;
+                    if (
+                        !message ||
+                        message.type !== "copperlayer/preview-state" ||
+                        message.version !== 1 ||
+                        message.nonce !== nonce ||
+                        typeof message.ready !== "boolean"
+                    )
+                        return;
+                    if (
+                        message.ready &&
+                        (typeof message.viewerSha256 !== "string" || !/^[0-9a-f]{64}$/.test(message.viewerSha256))
+                    )
+                        return;
+                    ready = message.ready;
+                    updateReady();
+                    status.textContent =
+                        message.error && typeof message.error === "string"
+                            ? message.error.slice(0, 240)
+                            : ready
+                              ? ""
+                              : "Waiting for the MCP viewer to report readiness.";
+                    if (typeof message.viewerSha256 === "string" && /^[0-9a-f]{64}$/.test(message.viewerSha256)) {
+                        document.querySelector("#source-details").hidden = false;
+                        document.querySelector("#viewer-sha").textContent = `SHA-256 ${message.viewerSha256}`;
+                    }
+                    sendTheme();
+                };
+                window.addEventListener("message", receiveState);
+                frame.addEventListener("load", sendTheme);
+                hold.addEventListener("change", updateReady);
+                theme.addEventListener("change", () => {
+                    chat.setTheme(theme.value);
+                    sendTheme();
+                });
+                document.querySelector("#setup").hidden = true;
+                document.querySelector("#settings").hidden = false;
+                hero.hidden = false;
+                status.textContent = "Waiting for the MCP viewer to report readiness.";
+                frame.src = viewer.href;
+                const teardown = event => {
+                    if (event.persisted) return;
+                    window.removeEventListener("message", receiveState);
+                    frame.removeEventListener("load", sendTheme);
+                    window.removeEventListener("pagehide", teardown);
+                    chat.destroy();
+                };
+                window.addEventListener("pagehide", teardown);
+            }
+            mountViewer();
+        </script>
+    </body>
+</html>
