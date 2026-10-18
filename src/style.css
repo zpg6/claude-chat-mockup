@@ -443,7 +443,7 @@
 /* Opt-in conversation playback. The final conversation reserves its space. */
 .claude-window[data-ccp-animation] .claude-app {
     position: relative;
-    padding-bottom: 154px;
+    padding-bottom: 170px;
 }
 .claude-window[data-ccp-animation] .claude-conversation {
     min-height: 280px;
@@ -463,7 +463,7 @@
 .claude-window[data-ccp-animation] .claude-composer {
     box-sizing: border-box;
     position: absolute;
-    top: calc(100% - 148px);
+    top: calc(100% - 164px);
     left: 0;
     right: 0;
     height: 96px;
